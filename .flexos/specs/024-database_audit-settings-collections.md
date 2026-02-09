@@ -182,7 +182,7 @@ interface AppSettings {
 
 ```json
 {
-  "baseStipendRate": 80.00,
+  "baseStipendRate": 100.00,
   "programYear": 2026,
   "adminUserIds": [
     "admin-sarah-uid",
