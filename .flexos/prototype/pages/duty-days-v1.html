@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Duty Days - COMPASS</title>
+
+  <!-- CDN Stack -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@unocss/reset/tailwind.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <link rel="stylesheet" href="../shared/components.css">
+  <script src="../shared/mock-data.js"></script>
+
+  <style>
+    /* Terminal bar colors */
+    .terminal-bar { border-radius: var(--radius-md); min-height: 32px; display: flex; align-items: center; padding: 0 var(--space-3); font-size: var(--text-sm); font-weight: var(--font-medium); color: #FFFFFF; transition: width 0.6s ease; }
+    .terminal-bar-A { background: var(--color-primary); }
+    .terminal-bar-B { background: var(--color-accent); }
+    .terminal-bar-C { background: var(--color-success); }
+    .terminal-bar-D { background: var(--color-warning-500); color: var(--color-gray-900); }
+    .terminal-bar-E { background: var(--color-error); }
+    .terminal-bar-Unknown { background: var(--color-gray-400); }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============================================
+       DESKTOP LAYOUT (>= 768px)
+       ============================================ -->
+  <div v-if="!isMobile" class="app-shell-desktop fade-in">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <i data-lucide="compass" style="color: #39D2C0;"></i>
+        <span>COMPASS</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="dashboard-v1.html" class="sidebar-link">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="users-v1.html" class="sidebar-link">
+          <i data-lucide="users"></i>
+          <span>Users</span>
+        </a>
+        <a href="duty-days-v1.html" class="sidebar-link active">
+          <i data-lucide="clock"></i>
+          <span>Duty Days</span>
+        </a>
+        <a href="coverage-v1.html" class="sidebar-link">
+          <i data-lucide="calendar-check"></i>
+          <span>Coverage</span>
+        </a>
+        <a href="stipends-v1.html" class="sidebar-link">
+          <i data-lucide="dollar-sign"></i>
+          <span>Stipends</span>
+        </a>
+        <a href="reports-v1.html" class="sidebar-link">
+          <i data-lucide="bar-chart-3"></i>
+          <span>Reports</span>
+        </a>
+
+        <div class="sidebar-section-label">System</div>
+        <a href="settings-v1.html" class="sidebar-link">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="avatar avatar-md">
+          <img src="https://i.pravatar.cc/150?img=5" alt="Admin">
+        </div>
+        <div style="flex: 1;">
+          <div class="sidebar-user-name">Linda Martinez</div>
+          <div class="sidebar-user-role">Administrator</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <header class="topbar">
+        <div style="display: flex; align-items: center; gap: var(--space-3);">
+          <h1 class="topbar-title">Duty Days</h1>
+          <span style="font-size: var(--text-sm); color: var(--color-muted);">
+            {{ filteredLogs.length }} log(s)
+          </span>
+        </div>
+        <div class="topbar-actions">
+          <a href="coverage-v1.html" class="btn btn-secondary btn-sm" style="text-decoration: none;">
+            <i data-lucide="calendar-check" style="width: 14px; height: 14px;"></i>
+            View Coverage
+          </a>
+        </div>
+      </header>
+
+      <main class="content-scroll">
+
+        <!-- Period Filter Chips -->
+        <div class="chip-group" style="margin-bottom: var(--space-6);">
+          <button
+            v-for="period in periods"
+            :key="period.key"
+            class="chip"
+            :class="{ active: activePeriod === period.key }"
+            @click="activePeriod = period.key"
+          >
+            {{ period.label }}
+          </button>
+
+          <!-- Terminal Filter -->
+          <div style="margin-left: auto; display: flex; align-items: center; gap: var(--space-2);">
+            <span style="font-size: var(--text-sm); color: var(--color-muted);">Terminal:</span>
+            <select v-model="terminalFilter" class="input" style="width: auto; min-height: 36px; padding: var(--space-1) var(--space-3); font-size: var(--text-sm);">
+              <option value="all">All</option>
+              <option v-for="t in ['A','B','C','D','E']" :key="t" :value="t">{{ t }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Loading Skeleton -->
+        <div v-if="loading" class="stagger-in" style="display: flex; flex-direction: column; gap: var(--space-6);">
+          <div class="card">
+            <div class="skeleton" style="width: 200px; height: 20px; margin-bottom: var(--space-4);"></div>
+            <div v-for="i in 5" :key="i" style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3);">
+              <div class="skeleton" style="width: 40px; height: 14px;"></div>
+              <div class="skeleton" style="flex: 1; height: 32px; border-radius: var(--radius-md);"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="skeleton" style="width: 200px; height: 20px; margin-bottom: var(--space-4);"></div>
+            <div v-for="i in 4" :key="i" class="skeleton" style="height: 48px; margin-bottom: var(--space-2); border-radius: var(--radius-md);"></div>
+          </div>
+        </div>
+
+        <div v-else class="stagger-in">
+
+          <!-- Two-column layout: Terminal Distribution + Chaplain Hours Summary -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); margin-bottom: var(--space-6);">
+
+            <!-- Terminal Distribution -->
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">Terminal Distribution</h2>
+                <p class="card-subtitle">Duty logs by terminal assignment</p>
+              </div>
+
+              <div v-if="totalLogCount === 0" style="padding: var(--space-4); text-align: center; color: var(--color-muted); font-size: var(--text-sm);">
+                No duty data for this period.
+              </div>
+
+              <div v-else style="display: flex; flex-direction: column; gap: var(--space-3);">
+                <div v-for="item in terminalDistribution" :key="item.terminal">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-1);">
+                    <span style="font-size: var(--text-sm); font-weight: var(--font-semibold);">Terminal {{ item.terminal }}</span>
+                    <span style="font-size: var(--text-sm); color: var(--color-muted);">
+                      {{ item.count }} log{{ item.count !== 1 ? 's' : '' }} ({{ item.percentage }}%)
+                    </span>
+                  </div>
+                  <div style="background: var(--color-gray-100); border-radius: var(--radius-md); overflow: hidden; height: 32px;">
+                    <div class="terminal-bar"
+                         :class="'terminal-bar-' + item.terminal"
+                         :style="{ width: Math.max(item.percentage, 3) + '%' }">
+                      <span v-if="item.percentage > 15">{{ item.percentage }}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chaplain Hours Summary -->
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">Chaplain Hours</h2>
+                <p class="card-subtitle">Total hours per chaplain</p>
+              </div>
+
+              <div v-if="chaplainHours.length === 0" style="padding: var(--space-4); text-align: center; color: var(--color-muted); font-size: var(--text-sm);">
+                No hours recorded.
+              </div>
+
+              <div v-else style="display: flex; flex-direction: column; gap: var(--space-2);">
+                <a v-for="ch in chaplainHours" :key="ch.userId"
+                   :href="'user-detail-v1.html?id=' + ch.userId"
+                   style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border); text-decoration: none; color: inherit; transition: background 150ms ease;"
+                   class="card-hover">
+                  <div class="avatar avatar-sm">
+                    <img v-if="ch.photoUrl" :src="ch.photoUrl" :alt="ch.name">
+                    <span v-else>{{ ch.name.charAt(0) }}</span>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: var(--font-medium); font-size: var(--text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ ch.name }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--color-muted);">{{ ch.terminals }}</div>
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="font-weight: var(--font-bold); font-size: var(--text-sm);">{{ ch.hours.toFixed(1) }}h</div>
+                    <div style="font-size: 10px; color: var(--color-muted);">{{ ch.logCount }} shifts</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Duty Logs Table -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Duty Log Entries</h2>
+              <p class="card-subtitle">{{ filteredLogs.length }} entries in selected period</p>
+            </div>
+
+            <div v-if="filteredLogs.length === 0" class="empty-state" style="padding: var(--space-8);">
+              <i data-lucide="clock"></i>
+              <h3>No duty logs found</h3>
+              <p>Try selecting a different time period or clearing your terminal filter.</p>
+            </div>
+
+            <div v-else class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Chaplain</th>
+                    <th>Date</th>
+                    <th>Day</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Hours</th>
+                    <th>Terminal</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="log in filteredLogs" :key="log.id" style="cursor: pointer;">
+                    <td>
+                      <a :href="'user-detail-v1.html?id=' + log.userId"
+                         style="display: flex; align-items: center; gap: var(--space-2); text-decoration: none; color: inherit;">
+                        <div class="avatar avatar-sm">
+                          <span>{{ getUserName(log.userId).charAt(0) }}</span>
+                        </div>
+                        <span style="font-weight: var(--font-medium);">{{ getUserName(log.userId) }}</span>
+                      </a>
+                    </td>
+                    <td>{{ formatDate(log.startTime) }}</td>
+                    <td style="color: var(--color-muted);">{{ log.dayName || '---' }}</td>
+                    <td>{{ formatTime(log.startTime) }}</td>
+                    <td>{{ log.endTime ? formatTime(log.endTime) : '---' }}</td>
+                    <td style="font-weight: var(--font-semibold);">
+                      {{ log.totalHours ? log.totalHours.toFixed(1) : '---' }}
+                    </td>
+                    <td>
+                      <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: var(--radius-md); background: var(--color-primary-100); color: var(--color-primary-700); font-size: var(--text-xs); font-weight: var(--font-semibold);">
+                        {{ getTerminalFromUser(log.userId) }}
+                      </span>
+                    </td>
+                    <td>
+                      <span v-if="log.isPaid" class="badge badge-paid">Paid</span>
+                      <span v-else-if="log.approved" class="badge badge-approved">Approved</span>
+                      <span v-else class="badge badge-pending">Pending</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+    </div>
+
+  </div>
+
+
+  <!-- ============================================
+       MOBILE LAYOUT (< 768px)
+       ============================================ -->
+  <div v-if="isMobile" class="app-shell-mobile fade-in">
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+      <h1 class="mobile-header-title">Duty Days</h1>
+      <a href="coverage-v1.html" class="btn btn-ghost btn-icon btn-sm" style="text-decoration: none;">
+        <i data-lucide="calendar-check" style="width: 20px; height: 20px;"></i>
+      </a>
+    </header>
+
+    <!-- Mobile Content -->
+    <main class="mobile-content">
+
+      <!-- Period Filter Chips (horizontal scroll) -->
+      <div style="display: flex; gap: var(--space-2); overflow-x: auto; padding-bottom: var(--space-3); margin-bottom: var(--space-4); -webkit-overflow-scrolling: touch;">
+        <button
+          v-for="period in periods"
+          :key="period.key"
+          class="chip"
+          :class="{ active: activePeriod === period.key }"
+          @click="activePeriod = period.key"
+          style="flex-shrink: 0;"
+        >
+          {{ period.label }}
+        </button>
+        <select v-model="terminalFilter" class="chip" style="flex-shrink: 0; appearance: auto; padding-right: var(--space-4);">
+          <option value="all">All Terminals</option>
+          <option v-for="t in ['A','B','C','D','E']" :key="t" :value="t">Terminal {{ t }}</option>
+        </select>
+      </div>
+
+      <!-- Loading (Mobile) -->
+      <div v-if="loading" class="stagger-in" style="display: flex; flex-direction: column; gap: var(--space-4);">
+        <div class="card" style="padding: var(--space-4);">
+          <div class="skeleton" style="width: 140px; height: 16px; margin-bottom: var(--space-3);"></div>
+          <div v-for="i in 5" :key="i" style="margin-bottom: var(--space-2);">
+            <div class="skeleton" style="height: 28px; border-radius: var(--radius-md);"></div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="stagger-in">
+
+        <!-- Terminal Distribution (Mobile - compact) -->
+        <div class="card" style="margin-bottom: var(--space-4); padding: var(--space-4);">
+          <h2 class="card-title" style="margin-bottom: var(--space-3); font-size: var(--text-base);">Terminal Distribution</h2>
+
+          <div v-if="totalLogCount === 0" style="text-align: center; padding: var(--space-3); color: var(--color-muted); font-size: var(--text-sm);">
+            No data for this period.
+          </div>
+
+          <div v-else style="display: flex; flex-direction: column; gap: var(--space-2);">
+            <div v-for="item in terminalDistribution" :key="item.terminal">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                <span style="font-size: var(--text-xs); font-weight: var(--font-semibold);">{{ item.terminal }}</span>
+                <span style="font-size: var(--text-xs); color: var(--color-muted);">{{ item.count }} ({{ item.percentage }}%)</span>
+              </div>
+              <div style="background: var(--color-gray-100); border-radius: var(--radius-sm); overflow: hidden; height: 24px;">
+                <div class="terminal-bar"
+                     :class="'terminal-bar-' + item.terminal"
+                     :style="{ width: Math.max(item.percentage, 4) + '%', minHeight: '24px', fontSize: '11px' }">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chaplain Hours (Mobile - compact) -->
+        <div class="card" style="margin-bottom: var(--space-4); padding: var(--space-4);">
+          <h2 class="card-title" style="margin-bottom: var(--space-3); font-size: var(--text-base);">Chaplain Hours</h2>
+
+          <div v-if="chaplainHours.length === 0" style="text-align: center; padding: var(--space-3); color: var(--color-muted); font-size: var(--text-sm);">
+            No hours recorded.
+          </div>
+
+          <div v-else style="display: flex; flex-direction: column; gap: var(--space-2);">
+            <a v-for="ch in chaplainHours" :key="ch.userId"
+               :href="'user-detail-v1.html?id=' + ch.userId"
+               class="pressable"
+               style="display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); border-radius: var(--radius-md); border: 1px solid var(--color-border); text-decoration: none; color: inherit;">
+              <div class="avatar avatar-sm">
+                <span>{{ ch.name.charAt(0) }}</span>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: var(--font-medium); font-size: var(--text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ ch.name.split(' ')[0] }}</div>
+              </div>
+              <div style="font-weight: var(--font-bold); font-size: var(--text-sm);">{{ ch.hours.toFixed(1) }}h</div>
+            </a>
+          </div>
+        </div>
+
+        <!-- Recent Duty Logs (Mobile - card list) -->
+        <div class="card" style="padding: var(--space-4);">
+          <h2 class="card-title" style="margin-bottom: var(--space-3); font-size: var(--text-base);">
+            Duty Logs
+            <span style="font-weight: var(--font-normal); color: var(--color-muted);">({{ filteredLogs.length }})</span>
+          </h2>
+
+          <div v-if="filteredLogs.length === 0" style="text-align: center; padding: var(--space-4); color: var(--color-muted); font-size: var(--text-sm);">
+            No duty logs found.
+          </div>
+
+          <div v-else style="display: flex; flex-direction: column; gap: var(--space-2);">
+            <div v-for="log in filteredLogs" :key="log.id"
+                 class="pressable"
+                 style="padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: var(--font-medium); font-size: var(--text-sm); margin-bottom: 2px;">
+                  {{ getUserName(log.userId) }}
+                </div>
+                <div style="font-size: var(--text-xs); color: var(--color-muted);">
+                  {{ formatDate(log.startTime) }} · {{ log.dayName }}
+                  · {{ log.totalHours ? log.totalHours.toFixed(1) + 'h' : 'Active' }}
+                  · {{ getTerminalFromUser(log.userId) }}
+                </div>
+              </div>
+              <span v-if="log.isPaid" class="badge badge-paid" style="font-size: 10px;">Paid</span>
+              <span v-else-if="log.approved" class="badge badge-approved" style="font-size: 10px;">Approved</span>
+              <span v-else class="badge badge-pending" style="font-size: 10px;">Pending</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <a href="dashboard-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="layout-dashboard"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="users-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="users"></i>
+        <span>Users</span>
+      </a>
+      <button class="bottom-nav-item active">
+        <i data-lucide="clock"></i>
+        <span>Duty</span>
+      </button>
+      <a href="stipends-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="dollar-sign"></i>
+        <span>Stipends</span>
+      </a>
+      <a href="settings-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="more-horizontal"></i>
+        <span>More</span>
+      </a>
+    </nav>
+
+  </div>
+
+</div>
+
+<script>
+const { createApp, ref, computed, onMounted, onUnmounted, watch, nextTick } = Vue;
+
+createApp({
+  setup() {
+    // Responsive state
+    const isMobile = ref(window.innerWidth < 768);
+    const onResize = () => {
+      isMobile.value = window.innerWidth < 768;
+    };
+
+    // Data state
+    const users = ref([]);
+    const dutyLogs = ref([]);
+    const loading = ref(true);
+
+    // Filter state
+    const activePeriod = ref('all');
+    const terminalFilter = ref('all');
+
+    const periods = [
+      { key: 'all', label: 'All Time' },
+      { key: '30d', label: 'Last 30 Days' },
+      { key: '7d', label: 'Last 7 Days' },
+      { key: 'week', label: 'This Week' }
+    ];
+
+    // Filtered logs (by period and terminal)
+    const filteredLogs = computed(() => {
+      let logs = [...dutyLogs.value];
+      const now = new Date();
+
+      // Period filter
+      switch (activePeriod.value) {
+        case '7d':
+          const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+          logs = logs.filter(l => new Date(l.startTime) >= sevenDaysAgo);
+          break;
+        case '30d':
+          const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+          logs = logs.filter(l => new Date(l.startTime) >= thirtyDaysAgo);
+          break;
+        case 'week':
+          const startOfWeek = new Date(now);
+          startOfWeek.setDate(now.getDate() - now.getDay() + 1); // Monday
+          startOfWeek.setHours(0, 0, 0, 0);
+          logs = logs.filter(l => new Date(l.startTime) >= startOfWeek);
+          break;
+      }
+
+      // Terminal filter
+      if (terminalFilter.value !== 'all') {
+        logs = logs.filter(l => {
+          const user = users.value.find(u => u.id === l.userId);
+          return user && user.terminals && user.terminals.includes(terminalFilter.value);
+        });
+      }
+
+      // Sort by most recent first
+      logs.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+
+      return logs;
+    });
+
+    // Total log count for distribution
+    const totalLogCount = computed(() => filteredLogs.value.length);
+
+    // Terminal distribution
+    const terminalDistribution = computed(() => {
+      const dist = {};
+      const allTerminals = ['A', 'B', 'C', 'D', 'E'];
+      allTerminals.forEach(t => dist[t] = 0);
+
+      filteredLogs.value.forEach(log => {
+        const user = users.value.find(u => u.id === log.userId);
+        const terminal = user?.terminals?.[0] || 'Unknown';
+        if (dist[terminal] !== undefined) {
+          dist[terminal]++;
+        } else {
+          if (!dist['Unknown']) dist['Unknown'] = 0;
+          dist['Unknown']++;
+        }
+      });
+
+      const total = filteredLogs.value.length || 1;
+      const result = Object.entries(dist)
+        .map(([terminal, count]) => ({
+          terminal,
+          count,
+          percentage: Math.round((count / total) * 100)
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      return result;
+    });
+
+    // Chaplain hours aggregation
+    const chaplainHours = computed(() => {
+      const hourMap = {};
+
+      filteredLogs.value.forEach(log => {
+        if (!hourMap[log.userId]) {
+          const user = users.value.find(u => u.id === log.userId);
+          hourMap[log.userId] = {
+            userId: log.userId,
+            name: user?.displayName || 'Unknown',
+            photoUrl: user?.photoUrl || null,
+            terminals: user?.terminals?.join(', ') || '---',
+            hours: 0,
+            logCount: 0
+          };
+        }
+        hourMap[log.userId].hours += (log.totalHours || 0);
+        hourMap[log.userId].logCount++;
+      });
+
+      return Object.values(hourMap).sort((a, b) => b.hours - a.hours);
+    });
+
+    // Helpers
+    function getUserName(userId) {
+      const user = users.value.find(u => u.id === userId);
+      return user ? user.displayName : 'Unknown';
+    }
+
+    function getTerminalFromUser(userId) {
+      const user = users.value.find(u => u.id === userId);
+      return user?.terminals?.[0] || '---';
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '---';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function formatTime(dateStr) {
+      if (!dateStr) return '---';
+      const d = new Date(dateStr);
+      return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+
+    // Watch for Lucide re-init
+    watch([filteredLogs, isMobile], () => {
+      nextTick(() => lucide.createIcons());
+    });
+
+    // Lifecycle
+    onMounted(() => {
+      window.addEventListener('resize', onResize);
+
+      document.addEventListener('mockdb:ready', () => {
+        users.value = mockDb.getAll('users');
+        dutyLogs.value = mockDb.getAll('duty_logs');
+        loading.value = false;
+
+        nextTick(() => lucide.createIcons());
+      });
+
+      lucide.createIcons();
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('resize', onResize);
+    });
+
+    return {
+      isMobile,
+      loading,
+      activePeriod,
+      terminalFilter,
+      periods,
+      filteredLogs,
+      totalLogCount,
+      terminalDistribution,
+      chaplainHours,
+      getUserName,
+      getTerminalFromUser,
+      formatDate,
+      formatTime
+    };
+  }
+}).mount('#app');
+</script>
+
+</body>
+</html>

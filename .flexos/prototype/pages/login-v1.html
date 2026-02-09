@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>COMPASS Login - Chaplaincy Operations Management</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS Reset & Runtime -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@unocss/reset/tailwind.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime"></script>
+
+  <!-- Icons & Vue -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+  <!-- Design Tokens & Components -->
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <link rel="stylesheet" href="../shared/components.css">
+
+  <style>
+    /* Login-specific styles */
+    body {
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    /* Desktop: Centered card on gradient background */
+    .login-wrapper-desktop {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      background: linear-gradient(135deg, var(--color-primary-900) 0%, var(--color-primary-700) 100%);
+      padding: var(--space-6);
+    }
+
+    .login-card {
+      background: var(--color-background);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-xl);
+      padding: var(--space-10);
+      width: 100%;
+      max-width: 420px;
+      animation: scaleIn 0.3s ease both;
+    }
+
+    /* Mobile: Full-screen form, no card */
+    @media (max-width: 767px) {
+      .login-wrapper-desktop {
+        background: var(--color-background);
+        padding: 0;
+        display: block;
+      }
+
+      .login-card {
+        box-shadow: none;
+        border-radius: 0;
+        padding: var(--space-8) var(--space-6);
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      /* Mobile: Navy gradient header section */
+      .login-header {
+        background: linear-gradient(180deg, var(--color-primary-900) 0%, var(--color-primary-800) 100%);
+        padding: var(--space-8) var(--space-6);
+        margin: calc(var(--space-8) * -1) calc(var(--space-6) * -1) var(--space-8);
+        border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
+      }
+
+      .login-header .logo-icon,
+      .login-header .login-title,
+      .login-header .login-subtitle {
+        color: #FFFFFF;
+      }
+    }
+
+    /* Logo & Branding */
+    .login-header {
+      text-align: center;
+      margin-bottom: var(--space-8);
+    }
+
+    .logo-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      margin: 0 auto var(--space-4);
+      color: var(--color-primary);
+    }
+
+    @media (max-width: 767px) {
+      .logo-icon {
+        color: #FFFFFF;
+      }
+    }
+
+    .login-title {
+      font-size: var(--text-3xl);
+      font-weight: var(--font-bold);
+      color: var(--color-foreground);
+      margin: 0 0 var(--space-2);
+      letter-spacing: -0.02em;
+    }
+
+    .login-subtitle {
+      font-size: var(--text-sm);
+      color: var(--color-muted);
+      margin: 0;
+      line-height: var(--leading-relaxed);
+    }
+
+    /* Form */
+    .login-form {
+      margin-bottom: var(--space-6);
+    }
+
+    .error-message {
+      display: flex;
+      align-items: start;
+      gap: var(--space-2);
+      padding: var(--space-3);
+      background: var(--color-error-50);
+      border: 1px solid var(--color-error-200);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-4);
+      animation: fadeIn 0.2s ease both;
+    }
+
+    .error-message i {
+      color: var(--color-error);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .error-message p {
+      margin: 0;
+      color: var(--color-error-700);
+      font-size: var(--text-sm);
+      font-weight: var(--font-medium);
+    }
+
+    .forgot-password {
+      text-align: center;
+      margin-top: var(--space-4);
+    }
+
+    .forgot-password a {
+      font-size: var(--text-sm);
+      color: var(--color-primary);
+      text-decoration: none;
+      font-weight: var(--font-medium);
+      transition: color var(--transition-fast);
+    }
+
+    @media (hover: hover) {
+      .forgot-password a:hover {
+        color: var(--color-primary-700);
+        text-decoration: underline;
+      }
+    }
+
+    /* Footer */
+    .login-footer {
+      text-align: center;
+      padding-top: var(--space-6);
+      border-top: 1px solid var(--color-border);
+      margin-top: auto;
+    }
+
+    @media (max-width: 767px) {
+      .login-footer {
+        border-top: none;
+        padding-top: var(--space-4);
+      }
+    }
+
+    .login-footer p {
+      margin: 0;
+      font-size: var(--text-xs);
+      color: var(--color-muted);
+    }
+
+    /* Loading state */
+    .btn-loading {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="login-wrapper-desktop">
+      <div class="login-card">
+        <!-- Header -->
+        <div class="login-header">
+          <div class="logo-icon">
+            <i data-lucide="compass" style="width: 48px; height: 48px; stroke-width: 2;"></i>
+          </div>
+          <h1 class="login-title">COMPASS</h1>
+          <p class="login-subtitle">Chaplaincy Operations Management</p>
+        </div>
+
+        <!-- Error Message -->
+        <div v-if="error" class="error-message">
+          <i data-lucide="alert-circle" style="width: 18px; height: 18px;"></i>
+          <p>{{ error }}</p>
+        </div>
+
+        <!-- Login Form -->
+        <form @submit.prevent="handleLogin" class="login-form">
+          <div class="input-group">
+            <label for="email" class="label">Email Address</label>
+            <input
+              id="email"
+              v-model="email"
+              type="email"
+              class="input"
+              placeholder="admin@dfwchaplaincy.org"
+              required
+              :disabled="isLoading"
+              autocomplete="email"
+            >
+          </div>
+
+          <div class="input-group">
+            <label for="password" class="label">Password</label>
+            <input
+              id="password"
+              v-model="password"
+              type="password"
+              class="input"
+              placeholder="Enter your password"
+              required
+              :disabled="isLoading"
+              autocomplete="current-password"
+            >
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary btn-lg"
+            style="width: 100%;"
+            :disabled="isLoading"
+          >
+            <span v-if="!isLoading">Sign In</span>
+            <span v-else class="btn-loading">
+              <span class="spinner spinner-sm" style="border-top-color: white; border-left-color: white;"></span>
+              Signing in...
+            </span>
+          </button>
+        </form>
+
+        <!-- Forgot Password Link -->
+        <div class="forgot-password">
+          <a href="#" @click.prevent="handleForgotPassword">Forgot your password?</a>
+        </div>
+
+        <!-- Footer -->
+        <div class="login-footer">
+          <p>DFW Airport Interfaith Chaplaincy</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        const isMobile = ref(window.innerWidth < 768);
+        const email = ref('');
+        const password = ref('');
+        const isLoading = ref(false);
+        const error = ref('');
+
+        const handleLogin = () => {
+          // Clear previous error
+          error.value = '';
+
+          // Validate inputs
+          if (!email.value || !password.value) {
+            error.value = 'Please enter both email and password.';
+            return;
+          }
+
+          // Basic email format validation
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email.value)) {
+            error.value = 'Please enter a valid email address.';
+            return;
+          }
+
+          // Start loading
+          isLoading.value = true;
+
+          // Simulate authentication delay
+          setTimeout(() => {
+            // For prototype: any email/password redirects to dashboard
+            // In production, this would call Firebase Auth
+            window.location.href = 'dashboard-v1.html';
+          }, 1200);
+        };
+
+        const handleForgotPassword = () => {
+          alert('Password reset functionality would be implemented here.\n\nIn production, this would send a password reset email via Firebase Auth.');
+        };
+
+        const handleResize = () => {
+          isMobile.value = window.innerWidth < 768;
+        };
+
+        onMounted(() => {
+          // Initialize Lucide icons
+          lucide.createIcons();
+
+          // Handle window resize
+          window.addEventListener('resize', handleResize);
+
+          // Auto-focus email field on desktop
+          if (!isMobile.value) {
+            const emailInput = document.getElementById('email');
+            if (emailInput) {
+              setTimeout(() => emailInput.focus(), 100);
+            }
+          }
+        });
+
+        return {
+          isMobile,
+          email,
+          password,
+          isLoading,
+          error,
+          handleLogin,
+          handleForgotPassword
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

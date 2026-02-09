@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>User Detail - COMPASS</title>
+
+  <!-- CDN Stack -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@unocss/reset/tailwind.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <link rel="stylesheet" href="../shared/components.css">
+  <script src="../shared/mock-data.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============================================
+       DESKTOP LAYOUT (>= 768px)
+       ============================================ -->
+  <div v-if="!isMobile" class="app-shell-desktop fade-in">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <i data-lucide="compass" style="color: #39D2C0;"></i>
+        <span>COMPASS</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="dashboard-v1.html" class="sidebar-link">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="users-v1.html" class="sidebar-link active">
+          <i data-lucide="users"></i>
+          <span>Users</span>
+        </a>
+        <a href="duty-days-v1.html" class="sidebar-link">
+          <i data-lucide="clock"></i>
+          <span>Duty Days</span>
+        </a>
+        <a href="coverage-v1.html" class="sidebar-link">
+          <i data-lucide="calendar-check"></i>
+          <span>Coverage</span>
+        </a>
+        <a href="stipends-v1.html" class="sidebar-link">
+          <i data-lucide="dollar-sign"></i>
+          <span>Stipends</span>
+        </a>
+        <a href="reports-v1.html" class="sidebar-link">
+          <i data-lucide="bar-chart-3"></i>
+          <span>Reports</span>
+        </a>
+
+        <div class="sidebar-section-label">System</div>
+        <a href="settings-v1.html" class="sidebar-link">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="avatar avatar-md">
+          <img src="https://i.pravatar.cc/150?img=5" alt="Admin">
+        </div>
+        <div style="flex: 1;">
+          <div class="sidebar-user-name">Linda Martinez</div>
+          <div class="sidebar-user-role">Administrator</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <header class="topbar">
+        <div style="display: flex; align-items: center; gap: var(--space-3);">
+          <a href="users-v1.html" style="display: flex; align-items: center; gap: var(--space-2); text-decoration: none; color: var(--color-muted); font-size: var(--text-sm); font-weight: var(--font-medium);">
+            <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
+            Back to Users
+          </a>
+        </div>
+        <div class="topbar-actions">
+          <button v-if="!editMode" class="btn btn-primary btn-sm" @click="editMode = true">
+            <i data-lucide="pencil" style="width: 14px; height: 14px;"></i>
+            Edit Profile
+          </button>
+          <template v-else>
+            <button class="btn btn-secondary btn-sm" @click="cancelEdit">Cancel</button>
+            <button class="btn btn-success btn-sm" @click="saveProfile">
+              <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+              Save Changes
+            </button>
+          </template>
+        </div>
+      </header>
+
+      <main class="content-scroll">
+
+        <!-- Loading Skeleton -->
+        <div v-if="loading" style="display: flex; gap: var(--space-8);">
+          <div style="flex-shrink: 0;">
+            <div class="skeleton" style="width: 120px; height: 120px; border-radius: var(--radius-full);"></div>
+          </div>
+          <div style="flex: 1;">
+            <div class="skeleton" style="width: 200px; height: 24px; margin-bottom: 12px;"></div>
+            <div class="skeleton" style="width: 250px; height: 14px; margin-bottom: 8px;"></div>
+            <div class="skeleton" style="width: 180px; height: 14px;"></div>
+          </div>
+        </div>
+
+        <!-- Profile Content -->
+        <div v-else-if="user" class="stagger-in">
+
+          <!-- Profile Header -->
+          <div class="card" style="margin-bottom: var(--space-6);">
+            <div style="display: flex; gap: var(--space-8); align-items: flex-start;">
+
+              <!-- Avatar -->
+              <div style="flex-shrink: 0; text-align: center;">
+                <div class="avatar" style="width: 120px; height: 120px; font-size: var(--text-3xl);">
+                  <img v-if="user.photoUrl" :src="user.photoUrl" :alt="user.displayName">
+                  <span v-else>{{ user.displayName.charAt(0) }}</span>
+                </div>
+              </div>
+
+              <!-- Quick Info -->
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2);">
+                  <h2 style="font-size: var(--text-2xl); font-weight: var(--font-bold);">{{ user.displayName }}</h2>
+                  <span v-if="user.onDuty" class="badge badge-on-duty" style="gap: var(--space-1);">
+                    <i data-lucide="circle" style="width: 6px; height: 6px; fill: currentColor;"></i>
+                    On Duty
+                  </span>
+                  <span v-else class="badge badge-off-duty">Off Duty</span>
+                </div>
+
+                <!-- Role badges -->
+                <div style="display: flex; gap: var(--space-2); margin-bottom: var(--space-3);">
+                  <span v-if="user.role === 'admin'" class="badge badge-primary">Admin</span>
+                  <span v-if="user.isChaplain" class="badge badge-success">Chaplain</span>
+                  <span v-if="user.isIntern" class="badge badge-warning">Intern</span>
+                  <span v-if="user.isSupportMember" class="badge badge-gray">Support</span>
+                </div>
+
+                <!-- Contact info -->
+                <div style="display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-foreground-secondary);">
+                  <div style="display: flex; align-items: center; gap: var(--space-2);">
+                    <i data-lucide="mail" style="width: 15px; height: 15px; color: var(--color-muted);"></i>
+                    <span>{{ user.email }}</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: var(--space-2);">
+                    <i data-lucide="phone" style="width: 15px; height: 15px; color: var(--color-muted);"></i>
+                    <span>{{ user.phoneNumber || 'No phone number' }}</span>
+                  </div>
+                  <div v-if="user.title" style="display: flex; align-items: center; gap: var(--space-2);">
+                    <i data-lucide="briefcase" style="width: 15px; height: 15px; color: var(--color-muted);"></i>
+                    <span>{{ user.title }}</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: var(--space-2);">
+                    <i data-lucide="calendar" style="width: 15px; height: 15px; color: var(--color-muted);"></i>
+                    <span>Member since {{ formatDate(user.createdAt) }}</span>
+                  </div>
+                </div>
+
+                <!-- Terminal assignments -->
+                <div v-if="user.terminals && user.terminals.length" style="margin-top: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                  <span style="font-size: var(--text-sm); color: var(--color-muted);">Terminals:</span>
+                  <span v-for="t in user.terminals" :key="t"
+                        style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: var(--radius-md); background: var(--color-primary-100); color: var(--color-primary-700); font-size: var(--text-xs); font-weight: var(--font-semibold);">
+                    {{ t }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div style="display: flex; gap: 0; border-bottom: 2px solid var(--color-border); margin-bottom: var(--space-6);">
+            <button v-for="tab in tabs" :key="tab.key"
+                    @click="activeTab = tab.key"
+                    style="padding: var(--space-3) var(--space-5); font-size: var(--text-sm); font-weight: var(--font-medium); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 150ms ease;"
+                    :style="activeTab === tab.key ? { borderBottomColor: 'var(--color-primary)', color: 'var(--color-primary)' } : { color: 'var(--color-muted)' }">
+              {{ tab.label }}
+            </button>
+          </div>
+
+          <!-- Profile Tab -->
+          <div v-if="activeTab === 'profile'" class="card">
+            <div class="card-header">
+              <h2 class="card-title">Personal Information</h2>
+              <p class="card-subtitle" v-if="!editMode">View-only. Click "Edit Profile" to make changes.</p>
+              <p class="card-subtitle" v-else style="color: var(--color-primary);">Editing mode active. Make your changes and click Save.</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-5);">
+
+              <div class="input-group">
+                <label class="label">Display Name</label>
+                <input v-if="editMode" v-model="editForm.displayName" class="input" type="text">
+                <div v-else style="font-size: var(--text-sm); padding: var(--space-2) 0;">{{ user.displayName }}</div>
+              </div>
+
+              <div class="input-group">
+                <label class="label">Email</label>
+                <input v-if="editMode" v-model="editForm.email" class="input" type="email">
+                <div v-else style="font-size: var(--text-sm); padding: var(--space-2) 0;">{{ user.email }}</div>
+              </div>
+
+              <div class="input-group">
+                <label class="label">Phone Number</label>
+                <input v-if="editMode" v-model="editForm.phoneNumber" class="input" type="tel" placeholder="(555) 123-4567">
+                <div v-else style="font-size: var(--text-sm); padding: var(--space-2) 0;">{{ user.phoneNumber || '---' }}</div>
+              </div>
+
+              <div class="input-group">
+                <label class="label">Role</label>
+                <select v-if="editMode" v-model="editForm.role" class="input">
+                  <option value="admin">Admin</option>
+                  <option value="chaplain">Chaplain</option>
+                  <option value="intern">Intern</option>
+                  <option value="support">Support</option>
+                </select>
+                <div v-else style="font-size: var(--text-sm); padding: var(--space-2) 0; text-transform: capitalize;">{{ user.role }}</div>
+              </div>
+
+              <div class="input-group" style="grid-column: span 2;">
+                <label class="label">Bio</label>
+                <textarea v-if="editMode" v-model="editForm.bio" class="input" rows="3" style="resize: vertical;" placeholder="A brief biography..."></textarea>
+                <div v-else style="font-size: var(--text-sm); padding: var(--space-2) 0; color: var(--color-foreground-secondary);">{{ user.bio || 'No bio provided.' }}</div>
+              </div>
+            </div>
+
+            <!-- Role Toggles -->
+            <hr class="divider">
+            <h3 style="font-size: var(--text-base); font-weight: var(--font-semibold); margin-bottom: var(--space-4);">Role Flags</h3>
+            <div style="display: flex; gap: var(--space-6); flex-wrap: wrap;">
+              <label v-for="toggle in roleToggles" :key="toggle.key"
+                     style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; font-size: var(--text-sm);">
+                <input type="checkbox"
+                       class="checkbox"
+                       :checked="editMode ? editForm[toggle.key] : user[toggle.key]"
+                       :disabled="!editMode"
+                       @change="editMode && (editForm[toggle.key] = $event.target.checked)">
+                <span>{{ toggle.label }}</span>
+              </label>
+            </div>
+
+            <!-- Terminal Assignments -->
+            <hr class="divider">
+            <h3 style="font-size: var(--text-base); font-weight: var(--font-semibold); margin-bottom: var(--space-4);">Terminal Assignments</h3>
+            <div style="display: flex; gap: var(--space-3);">
+              <label v-for="t in ['A', 'B', 'C', 'D', 'E']" :key="t"
+                     class="chip"
+                     :class="{ active: editMode ? editForm.terminals.includes(t) : (user.terminals || []).includes(t) }"
+                     style="cursor: pointer;">
+                <input type="checkbox"
+                       :checked="editMode ? editForm.terminals.includes(t) : (user.terminals || []).includes(t)"
+                       :disabled="!editMode"
+                       @change="toggleTerminal(t)"
+                       style="display: none;">
+                Terminal {{ t }}
+              </label>
+            </div>
+          </div>
+
+          <!-- Duty History Tab -->
+          <div v-if="activeTab === 'duty'" class="card">
+            <div class="card-header">
+              <h2 class="card-title">Duty History</h2>
+              <p class="card-subtitle">{{ dutyLogs.length }} duty log(s) on record</p>
+            </div>
+
+            <div v-if="dutyLogs.length === 0" class="empty-state" style="padding: var(--space-8);">
+              <i data-lucide="clock"></i>
+              <p>No duty logs yet.</p>
+            </div>
+
+            <div v-else class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Day</th>
+                    <th>Hours</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="log in dutyLogs" :key="log.id">
+                    <td>{{ formatDate(log.startTime) }}</td>
+                    <td>{{ log.dayName || '---' }}</td>
+                    <td>{{ log.totalHours ? log.totalHours.toFixed(1) + ' hrs' : 'In progress' }}</td>
+                    <td>
+                      <span v-if="log.isPaid" class="badge badge-paid">Paid</span>
+                      <span v-else-if="log.approved" class="badge badge-approved">Approved</span>
+                      <span v-else class="badge badge-pending">Pending</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Stipend History Tab -->
+          <div v-if="activeTab === 'stipends'" class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h2 class="card-title">Stipend History</h2>
+                <p class="card-subtitle">Payment records</p>
+              </div>
+              <div v-if="payouts.length > 0" style="text-align: right;">
+                <div style="font-size: var(--text-sm); color: var(--color-muted);">Total Paid</div>
+                <div style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--color-success);">
+                  ${{ totalPaid }}
+                </div>
+              </div>
+            </div>
+
+            <div v-if="payouts.length === 0" class="empty-state" style="padding: var(--space-8);">
+              <i data-lucide="dollar-sign"></i>
+              <p>No stipend payments yet.</p>
+            </div>
+
+            <div v-else class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Month</th>
+                    <th>Shifts</th>
+                    <th>Amount</th>
+                    <th>Check #</th>
+                    <th>Date Paid</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="payout in payouts" :key="payout.id">
+                    <td style="font-weight: var(--font-medium);">{{ payout.monthPaid }} {{ payout.yearPaid }}</td>
+                    <td>{{ payout.dutyLogCount }}</td>
+                    <td style="font-weight: var(--font-semibold); color: var(--color-success);">${{ payout.payoutAmount }}</td>
+                    <td>{{ payout.checkNumber || '---' }}</td>
+                    <td>{{ formatDate(payout.createdAt) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 404 State -->
+        <div v-else class="empty-state">
+          <i data-lucide="user-x"></i>
+          <h3>User not found</h3>
+          <p>This user ID does not match any record.</p>
+          <a href="users-v1.html" class="btn btn-primary" style="margin-top: var(--space-4); text-decoration: none;">
+            Return to User List
+          </a>
+        </div>
+
+      </main>
+    </div>
+
+  </div>
+
+
+  <!-- ============================================
+       MOBILE LAYOUT (< 768px)
+       ============================================ -->
+  <div v-if="isMobile" class="app-shell-mobile fade-in">
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+      <a href="users-v1.html" style="display: flex; align-items: center; text-decoration: none; color: var(--color-foreground);">
+        <i data-lucide="arrow-left" style="width: 20px; height: 20px;"></i>
+      </a>
+      <h1 class="mobile-header-title" style="flex: 1; text-align: center;">User Detail</h1>
+      <button v-if="!editMode && user" class="btn btn-ghost btn-icon btn-sm" @click="editMode = true">
+        <i data-lucide="pencil" style="width: 18px; height: 18px;"></i>
+      </button>
+      <button v-else-if="editMode" class="btn btn-ghost btn-icon btn-sm" @click="saveProfile" style="color: var(--color-success);">
+        <i data-lucide="check" style="width: 20px; height: 20px;"></i>
+      </button>
+      <div v-else style="width: 32px;"></div>
+    </header>
+
+    <!-- Mobile Content -->
+    <main class="mobile-content">
+
+      <!-- Loading -->
+      <div v-if="loading" style="display: flex; flex-direction: column; align-items: center; gap: var(--space-4); padding: var(--space-8);">
+        <div class="skeleton" style="width: 96px; height: 96px; border-radius: var(--radius-full);"></div>
+        <div class="skeleton" style="width: 160px; height: 20px;"></div>
+        <div class="skeleton" style="width: 200px; height: 14px;"></div>
+      </div>
+
+      <!-- Profile Content (Mobile) -->
+      <div v-else-if="user" class="stagger-in">
+
+        <!-- Avatar + Name (centered) -->
+        <div style="text-align: center; margin-bottom: var(--space-6);">
+          <div class="avatar" style="width: 96px; height: 96px; font-size: var(--text-3xl); margin: 0 auto var(--space-3);">
+            <img v-if="user.photoUrl" :src="user.photoUrl" :alt="user.displayName">
+            <span v-else>{{ user.displayName.charAt(0) }}</span>
+          </div>
+          <h2 style="font-size: var(--text-xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">{{ user.displayName }}</h2>
+          <div style="display: flex; justify-content: center; gap: var(--space-2); margin-bottom: var(--space-2);">
+            <span v-if="user.role === 'admin'" class="badge badge-primary">Admin</span>
+            <span v-if="user.isChaplain" class="badge badge-success">Chaplain</span>
+            <span v-if="user.isIntern" class="badge badge-warning">Intern</span>
+            <span v-if="user.onDuty" class="badge badge-on-duty" style="gap: 4px;">
+              <i data-lucide="circle" style="width: 6px; height: 6px; fill: currentColor;"></i>
+              On Duty
+            </span>
+          </div>
+          <div style="font-size: var(--text-sm); color: var(--color-muted);">{{ user.email }}</div>
+          <div v-if="user.phoneNumber" style="font-size: var(--text-sm); color: var(--color-muted);">{{ user.phoneNumber }}</div>
+        </div>
+
+        <!-- Tabs (mobile) -->
+        <div style="display: flex; gap: 0; border-bottom: 2px solid var(--color-border); margin-bottom: var(--space-4); overflow-x: auto;">
+          <button v-for="tab in tabs" :key="tab.key"
+                  @click="activeTab = tab.key"
+                  style="padding: var(--space-2) var(--space-4); font-size: var(--text-sm); font-weight: var(--font-medium); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; white-space: nowrap;"
+                  :style="activeTab === tab.key ? { borderBottomColor: 'var(--color-primary)', color: 'var(--color-primary)' } : { color: 'var(--color-muted)' }">
+            {{ tab.label }}
+          </button>
+        </div>
+
+        <!-- Profile Tab (Mobile) -->
+        <div v-if="activeTab === 'profile'" class="card" style="padding: var(--space-4);">
+          <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+
+            <div class="input-group" style="margin-bottom: 0;">
+              <label class="label">Display Name</label>
+              <input v-if="editMode" v-model="editForm.displayName" class="input" type="text">
+              <div v-else style="font-size: var(--text-sm);">{{ user.displayName }}</div>
+            </div>
+
+            <div class="input-group" style="margin-bottom: 0;">
+              <label class="label">Email</label>
+              <input v-if="editMode" v-model="editForm.email" class="input" type="email">
+              <div v-else style="font-size: var(--text-sm);">{{ user.email }}</div>
+            </div>
+
+            <div class="input-group" style="margin-bottom: 0;">
+              <label class="label">Phone</label>
+              <input v-if="editMode" v-model="editForm.phoneNumber" class="input" type="tel">
+              <div v-else style="font-size: var(--text-sm);">{{ user.phoneNumber || '---' }}</div>
+            </div>
+
+            <div class="input-group" style="margin-bottom: 0;">
+              <label class="label">Bio</label>
+              <textarea v-if="editMode" v-model="editForm.bio" class="input" rows="3"></textarea>
+              <div v-else style="font-size: var(--text-sm); color: var(--color-foreground-secondary);">{{ user.bio || 'No bio.' }}</div>
+            </div>
+
+            <!-- Terminals (Mobile) -->
+            <div>
+              <label class="label">Terminals</label>
+              <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                <span v-for="t in ['A', 'B', 'C', 'D', 'E']" :key="t"
+                      class="chip"
+                      :class="{ active: editMode ? editForm.terminals.includes(t) : (user.terminals || []).includes(t) }"
+                      @click="editMode && toggleTerminal(t)"
+                      style="font-size: var(--text-xs); padding: var(--space-1) var(--space-2);">
+                  {{ t }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="editMode" style="margin-top: var(--space-4); display: flex; gap: var(--space-3);">
+            <button class="btn btn-secondary" style="flex: 1;" @click="cancelEdit">Cancel</button>
+            <button class="btn btn-success" style="flex: 1;" @click="saveProfile">Save</button>
+          </div>
+        </div>
+
+        <!-- Duty History (Mobile) -->
+        <div v-if="activeTab === 'duty'">
+          <div v-if="dutyLogs.length === 0" style="text-align: center; padding: var(--space-8); color: var(--color-muted); font-size: var(--text-sm);">
+            No duty logs yet.
+          </div>
+          <div v-else style="display: flex; flex-direction: column; gap: var(--space-2);">
+            <div v-for="log in dutyLogs" :key="log.id"
+                 class="card pressable"
+                 style="padding: var(--space-3); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-weight: var(--font-medium); font-size: var(--text-sm);">{{ formatDate(log.startTime) }}</div>
+                <div style="font-size: var(--text-xs); color: var(--color-muted);">
+                  {{ log.dayName }} · {{ log.totalHours ? log.totalHours.toFixed(1) + ' hrs' : 'In progress' }}
+                </div>
+              </div>
+              <span v-if="log.isPaid" class="badge badge-paid" style="font-size: 10px;">Paid</span>
+              <span v-else-if="log.approved" class="badge badge-approved" style="font-size: 10px;">Approved</span>
+              <span v-else class="badge badge-pending" style="font-size: 10px;">Pending</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stipend History (Mobile) -->
+        <div v-if="activeTab === 'stipends'">
+          <div v-if="payouts.length > 0" style="text-align: center; margin-bottom: var(--space-4);">
+            <div style="font-size: var(--text-xs); color: var(--color-muted);">Total Paid</div>
+            <div style="font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--color-success);">${{ totalPaid }}</div>
+          </div>
+
+          <div v-if="payouts.length === 0" style="text-align: center; padding: var(--space-8); color: var(--color-muted); font-size: var(--text-sm);">
+            No stipend payments yet.
+          </div>
+          <div v-else style="display: flex; flex-direction: column; gap: var(--space-2);">
+            <div v-for="payout in payouts" :key="payout.id"
+                 class="card pressable"
+                 style="padding: var(--space-3); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-weight: var(--font-medium); font-size: var(--text-sm);">{{ payout.monthPaid }} {{ payout.yearPaid }}</div>
+                <div style="font-size: var(--text-xs); color: var(--color-muted);">
+                  {{ payout.dutyLogCount }} shifts · Check #{{ payout.checkNumber || '---' }}
+                </div>
+              </div>
+              <div style="font-weight: var(--font-bold); color: var(--color-success);">${{ payout.payoutAmount }}</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 404 (Mobile) -->
+      <div v-else style="text-align: center; padding: var(--space-10) var(--space-4);">
+        <i data-lucide="user-x" style="width: 48px; height: 48px; margin: 0 auto var(--space-4); display: block; color: var(--color-muted); opacity: 0.5;"></i>
+        <p style="font-size: var(--text-sm); color: var(--color-muted); margin-bottom: var(--space-4);">User not found.</p>
+        <a href="users-v1.html" class="btn btn-primary btn-sm" style="text-decoration: none;">Back to Users</a>
+      </div>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <a href="dashboard-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="layout-dashboard"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="users-v1.html" class="bottom-nav-item active" style="text-decoration: none;">
+        <i data-lucide="users"></i>
+        <span>Users</span>
+      </a>
+      <a href="duty-days-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="clock"></i>
+        <span>Duty</span>
+      </a>
+      <a href="stipends-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="dollar-sign"></i>
+        <span>Stipends</span>
+      </a>
+      <a href="settings-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="more-horizontal"></i>
+        <span>More</span>
+      </a>
+    </nav>
+
+  </div>
+
+</div>
+
+<script>
+const { createApp, ref, computed, reactive, onMounted, onUnmounted, watch, nextTick } = Vue;
+
+createApp({
+  setup() {
+    // Responsive state
+    const isMobile = ref(window.innerWidth < 768);
+    const onResize = () => {
+      isMobile.value = window.innerWidth < 768;
+    };
+
+    // Data state
+    const user = ref(null);
+    const dutyLogs = ref([]);
+    const payouts = ref([]);
+    const loading = ref(true);
+
+    // UI state
+    const editMode = ref(false);
+    const activeTab = ref('profile');
+    const tabs = [
+      { key: 'profile', label: 'Profile' },
+      { key: 'duty', label: 'Duty History' },
+      { key: 'stipends', label: 'Stipend History' }
+    ];
+
+    // Edit form (reactive copy of user data)
+    const editForm = reactive({
+      displayName: '',
+      email: '',
+      phoneNumber: '',
+      bio: '',
+      role: '',
+      isChaplain: false,
+      isIntern: false,
+      isSupportMember: false,
+      isAfterHours: false,
+      terminals: []
+    });
+
+    const roleToggles = [
+      { key: 'isChaplain', label: 'Chaplain' },
+      { key: 'isIntern', label: 'Intern' },
+      { key: 'isSupportMember', label: 'Support Staff' },
+      { key: 'isAfterHours', label: 'After-Hours' }
+    ];
+
+    // Total paid
+    const totalPaid = computed(() => {
+      return payouts.value.reduce((sum, p) => sum + (p.payoutAmount || 0), 0);
+    });
+
+    // Helpers
+    function formatDate(dateStr) {
+      if (!dateStr) return '---';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function populateEditForm() {
+      if (!user.value) return;
+      editForm.displayName = user.value.displayName || '';
+      editForm.email = user.value.email || '';
+      editForm.phoneNumber = user.value.phoneNumber || '';
+      editForm.bio = user.value.bio || '';
+      editForm.role = user.value.role || 'chaplain';
+      editForm.isChaplain = !!user.value.isChaplain;
+      editForm.isIntern = !!user.value.isIntern;
+      editForm.isSupportMember = !!user.value.isSupportMember;
+      editForm.isAfterHours = !!user.value.isAfterHours;
+      editForm.terminals = [...(user.value.terminals || [])];
+    }
+
+    function cancelEdit() {
+      editMode.value = false;
+      populateEditForm();
+    }
+
+    function saveProfile() {
+      // In prototype, just update the local user object
+      if (user.value) {
+        user.value.displayName = editForm.displayName;
+        user.value.email = editForm.email;
+        user.value.phoneNumber = editForm.phoneNumber;
+        user.value.bio = editForm.bio;
+        user.value.role = editForm.role;
+        user.value.isChaplain = editForm.isChaplain;
+        user.value.isIntern = editForm.isIntern;
+        user.value.isSupportMember = editForm.isSupportMember;
+        user.value.isAfterHours = editForm.isAfterHours;
+        user.value.terminals = [...editForm.terminals];
+      }
+      editMode.value = false;
+    }
+
+    function toggleTerminal(terminal) {
+      if (!editMode.value) return;
+      const idx = editForm.terminals.indexOf(terminal);
+      if (idx === -1) {
+        editForm.terminals.push(terminal);
+      } else {
+        editForm.terminals.splice(idx, 1);
+      }
+      editForm.terminals.sort();
+    }
+
+    // Watch for Lucide re-init
+    watch([activeTab, isMobile, editMode], () => {
+      nextTick(() => lucide.createIcons());
+    });
+
+    // Lifecycle
+    onMounted(() => {
+      window.addEventListener('resize', onResize);
+
+      document.addEventListener('mockdb:ready', () => {
+        // Get user ID from URL
+        const params = new URLSearchParams(window.location.search);
+        const userId = params.get('id');
+
+        if (userId) {
+          user.value = mockDb.getById('users', userId);
+        }
+
+        // If no ID or not found, use first user
+        if (!user.value) {
+          const allUsers = mockDb.getAll('users');
+          if (allUsers.length > 0) {
+            user.value = allUsers[0];
+          }
+        }
+
+        if (user.value) {
+          dutyLogs.value = mockHelpers.getDutyLogsForChaplain(user.value.id)
+            .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+          payouts.value = mockHelpers.getPayoutsForChaplain(user.value.id)
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          populateEditForm();
+        }
+
+        loading.value = false;
+        nextTick(() => lucide.createIcons());
+      });
+
+      lucide.createIcons();
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('resize', onResize);
+    });
+
+    return {
+      isMobile,
+      user,
+      dutyLogs,
+      payouts,
+      loading,
+      editMode,
+      activeTab,
+      tabs,
+      editForm,
+      roleToggles,
+      totalPaid,
+      formatDate,
+      cancelEdit,
+      saveProfile,
+      toggleTerminal
+    };
+  }
+}).mount('#app');
+</script>
+
+</body>
+</html>

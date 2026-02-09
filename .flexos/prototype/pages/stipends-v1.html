@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Stipend Processing - COMPASS</title>
+
+  <!-- CDN Stack -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@unocss/reset/tailwind.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+  <!-- COMPASS Design System -->
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <link rel="stylesheet" href="../shared/components.css">
+  <script src="../shared/mock-data.js"></script>
+</head>
+<body>
+
+<div id="app">
+  <!-- Desktop Layout (>=768px) -->
+  <div class="app-shell-desktop" v-if="!isMobile">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <i data-lucide="compass" style="width: 32px; height: 32px;"></i>
+        <span>COMPASS</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="index.html" class="sidebar-link">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="sidebar-link">
+          <i data-lucide="users"></i>
+          <span>Users</span>
+        </a>
+        <a href="#" class="sidebar-link">
+          <i data-lucide="calendar-days"></i>
+          <span>Duty Days</span>
+        </a>
+        <a href="#" class="sidebar-link">
+          <i data-lucide="grid-3x3"></i>
+          <span>Coverage</span>
+        </a>
+        <a href="stipends-v1.html" class="sidebar-link active">
+          <i data-lucide="dollar-sign"></i>
+          <span>Stipends</span>
+        </a>
+        <a href="#" class="sidebar-link">
+          <i data-lucide="bar-chart"></i>
+          <span>Reports</span>
+        </a>
+
+        <div class="sidebar-section-label">System</div>
+        <a href="#" class="sidebar-link">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="avatar avatar-md">LA</div>
+        <div>
+          <div class="sidebar-user-name">Linda Adams</div>
+          <div class="sidebar-user-role">Admin</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="topbar">
+        <div class="topbar-title">
+          Stipend Processing
+          <span class="badge badge-primary" style="margin-left: var(--space-3);">{{ selectedMonthName }} 2026</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost btn-icon">
+            <i data-lucide="help-circle"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="content-scroll">
+        <!-- Month Selector -->
+        <div class="chip-group stagger-in" style="margin-bottom: var(--space-6);">
+          <button
+            v-for="month in months"
+            :key="month.index"
+            class="chip"
+            :class="{
+              active: selectedMonth === month.index,
+              'opacity-60': month.status === 'upcoming'
+            }"
+            @click="selectedMonth = month.index"
+          >
+            <i v-if="month.status === 'complete'" data-lucide="check" style="width: 14px; height: 14px; margin-right: var(--space-1);"></i>
+            {{ month.name }}
+          </button>
+        </div>
+
+        <!-- Period Summary Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-8);" class="fade-in">
+          <div class="kpi-card">
+            <div class="kpi-label">Qualifying Chaplains</div>
+            <div class="kpi-value">{{ qualifyingChaplains.length }}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Unpaid Shifts</div>
+            <div class="kpi-value">{{ totalUnpaidShifts }}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Estimated Total</div>
+            <div class="kpi-value" style="font-variant-numeric: tabular-nums;">${{ estimatedTotal.toFixed(2) }}</div>
+          </div>
+        </div>
+
+        <!-- Qualifying Chaplains Table -->
+        <div class="card fade-in" style="margin-bottom: var(--space-8);">
+          <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div class="card-title">Qualifying Chaplains</div>
+              <div class="card-subtitle">Select duty entries to process for payment</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" @click="toggleSelectAll">
+              {{ allSelected ? 'Deselect All' : 'Select All' }}
+            </button>
+          </div>
+
+          <div class="table-wrapper" style="margin-top: var(--space-4);">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="width: 40px;">
+                    <input type="checkbox" class="checkbox" :checked="allSelected" @change="toggleSelectAll">
+                  </th>
+                  <th>Chaplain</th>
+                  <th style="text-align: right;">Shifts</th>
+                  <th style="text-align: right;">Hours</th>
+                  <th style="text-align: right;">Base Amount</th>
+                  <th style="text-align: right;">Adjustment</th>
+                  <th style="text-align: right;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="chaplain in qualifyingChaplains" :key="chaplain.userId">
+                  <td>
+                    <input
+                      type="checkbox"
+                      class="checkbox"
+                      :checked="chaplain.selected"
+                      @change="toggleChaplain(chaplain.userId)"
+                    >
+                  </td>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: var(--space-2);">
+                      <div class="avatar avatar-sm">
+                        {{ chaplain.initials }}
+                      </div>
+                      <span style="font-weight: var(--font-medium);">{{ chaplain.name }}</span>
+                    </div>
+                  </td>
+                  <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ chaplain.shiftCount }}</td>
+                  <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ chaplain.totalHours.toFixed(1) }}</td>
+                  <td style="text-align: right; font-variant-numeric: tabular-nums;">${{ chaplain.baseAmount.toFixed(2) }}</td>
+                  <td style="text-align: right; font-variant-numeric: tabular-nums;" :style="{ color: chaplain.adjustment > 0 ? 'var(--color-success)' : chaplain.adjustment < 0 ? 'var(--color-error)' : 'var(--color-muted)' }">
+                    {{ chaplain.adjustment > 0 ? '+' : '' }}${{ chaplain.adjustment.toFixed(2) }}
+                  </td>
+                  <td style="text-align: right; font-weight: var(--font-semibold); font-variant-numeric: tabular-nums;">${{ chaplain.total.toFixed(2) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Previous Payouts -->
+        <div class="card fade-in">
+          <button
+            @click="showPreviousPayouts = !showPreviousPayouts"
+            style="display: flex; align-items: center; justify-content: space-between; width: 100%; background: none; border: none; cursor: pointer; padding: 0;"
+          >
+            <div>
+              <div class="card-title">Previous Payouts</div>
+              <div class="card-subtitle">January 2026 processed payments ({{ previousPayouts.length }})</div>
+            </div>
+            <i :data-lucide="showPreviousPayouts ? 'chevron-up' : 'chevron-down'" style="color: var(--color-muted);"></i>
+          </button>
+
+          <div v-show="showPreviousPayouts" style="margin-top: var(--space-4);">
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Chaplain</th>
+                    <th style="text-align: right;">Amount</th>
+                    <th>Check #</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="payout in previousPayouts" :key="payout.id">
+                    <td>{{ payout.chaplainName }}</td>
+                    <td style="text-align: right; font-variant-numeric: tabular-nums;">${{ payout.payoutAmount.toFixed(2) }}</td>
+                    <td>{{ payout.checkNumber }}</td>
+                    <td>{{ formatDate(payout.createdAt) }}</td>
+                    <td><span class="badge badge-paid">Paid</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spacer for fixed footer -->
+        <div style="height: 100px;"></div>
+      </div>
+
+      <!-- Payout Summary (Sticky Footer) -->
+      <div style="position: sticky; bottom: 0; left: 0; right: 0; background: var(--color-background); border-top: 2px solid var(--color-border); padding: var(--space-5) var(--space-8); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.1);">
+        <div style="display: flex; align-items: center; gap: var(--space-6);">
+          <div>
+            <div style="font-size: var(--text-sm); color: var(--color-muted);">Selected</div>
+            <div style="font-size: var(--text-xl); font-weight: var(--font-semibold);">{{ selectedCount }} of {{ qualifyingChaplains.length }} chaplains</div>
+          </div>
+          <div>
+            <div style="font-size: var(--text-sm); color: var(--color-muted);">Total Amount</div>
+            <div style="font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--color-primary); font-variant-numeric: tabular-nums;">${{ selectedTotal.toFixed(2) }}</div>
+          </div>
+        </div>
+        <button
+          class="btn btn-primary btn-lg"
+          :disabled="selectedCount === 0"
+          @click="processPayout"
+        >
+          <i data-lucide="send"></i>
+          Process Payout
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile Layout (<768px) -->
+  <div class="app-shell-mobile" v-else>
+    <header class="mobile-header">
+      <h1 class="mobile-header-title">Stipends</h1>
+      <button class="btn btn-ghost btn-icon">
+        <i data-lucide="help-circle"></i>
+      </button>
+    </header>
+
+    <div class="mobile-content">
+      <!-- Month Selector (Horizontal Scroll) -->
+      <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: var(--space-5);">
+        <div class="chip-group" style="flex-wrap: nowrap; padding-bottom: var(--space-2);">
+          <button
+            v-for="month in months"
+            :key="month.index"
+            class="chip"
+            :class="{
+              active: selectedMonth === month.index,
+              'opacity-60': month.status === 'upcoming'
+            }"
+            @click="selectedMonth = month.index"
+          >
+            <i v-if="month.status === 'complete'" data-lucide="check" style="width: 14px; height: 14px; margin-right: var(--space-1);"></i>
+            {{ month.name }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Period Summary Cards -->
+      <div style="display: grid; grid-template-columns: 1fr; gap: var(--space-3); margin-bottom: var(--space-5);">
+        <div class="kpi-card">
+          <div class="kpi-label">Qualifying Chaplains</div>
+          <div class="kpi-value">{{ qualifyingChaplains.length }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Unpaid Shifts</div>
+          <div class="kpi-value">{{ totalUnpaidShifts }}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Estimated Total</div>
+          <div class="kpi-value" style="font-variant-numeric: tabular-nums;">${{ estimatedTotal.toFixed(2) }}</div>
+        </div>
+      </div>
+
+      <!-- Chaplain Cards -->
+      <div style="margin-bottom: var(--space-5);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
+          <h2 style="font-size: var(--text-lg); font-weight: var(--font-semibold);">Qualifying Chaplains</h2>
+          <button class="btn btn-ghost btn-sm" @click="toggleSelectAll">
+            {{ allSelected ? 'Deselect' : 'Select All' }}
+          </button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+          <div
+            v-for="chaplain in qualifyingChaplains"
+            :key="chaplain.userId"
+            class="card pressable"
+            style="padding: var(--space-4);"
+            @click="toggleChaplain(chaplain.userId)"
+          >
+            <div style="display: flex; gap: var(--space-3);">
+              <input
+                type="checkbox"
+                class="checkbox"
+                :checked="chaplain.selected"
+                @click.stop
+                @change="toggleChaplain(chaplain.userId)"
+                style="margin-top: var(--space-1);"
+              >
+              <div class="avatar avatar-md">{{ chaplain.initials }}</div>
+              <div style="flex: 1;">
+                <div style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">{{ chaplain.name }}</div>
+                <div style="display: flex; gap: var(--space-4); font-size: var(--text-sm); color: var(--color-muted);">
+                  <span>{{ chaplain.shiftCount }} shifts</span>
+                  <span>{{ chaplain.totalHours.toFixed(1) }} hrs</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--space-2);">
+                  <div style="font-size: var(--text-sm);">
+                    <span style="color: var(--color-muted);">Base:</span> ${{ chaplain.baseAmount.toFixed(2) }}
+                    <span v-if="chaplain.adjustment !== 0" :style="{ color: chaplain.adjustment > 0 ? 'var(--color-success)' : 'var(--color-error)', marginLeft: 'var(--space-2)' }">
+                      {{ chaplain.adjustment > 0 ? '+' : '' }}${{ chaplain.adjustment.toFixed(2) }}
+                    </span>
+                  </div>
+                  <div style="font-size: var(--text-lg); font-weight: var(--font-bold); font-variant-numeric: tabular-nums;">
+                    ${{ chaplain.total.toFixed(2) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Previous Payouts (Mobile) -->
+      <div class="card">
+        <button
+          @click="showPreviousPayouts = !showPreviousPayouts"
+          style="display: flex; align-items: center; justify-content: space-between; width: 100%; background: none; border: none; cursor: pointer; padding: 0; text-align: left;"
+        >
+          <div>
+            <div style="font-size: var(--text-lg); font-weight: var(--font-semibold);">Previous Payouts</div>
+            <div style="font-size: var(--text-sm); color: var(--color-muted); margin-top: var(--space-0-5);">January 2026 ({{ previousPayouts.length }})</div>
+          </div>
+          <i :data-lucide="showPreviousPayouts ? 'chevron-up' : 'chevron-down'" style="color: var(--color-muted);"></i>
+        </button>
+
+        <div v-show="showPreviousPayouts" style="margin-top: var(--space-4);">
+          <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+            <div v-for="payout in previousPayouts" :key="payout.id" style="border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-3);">
+              <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-1);">
+                <span style="font-weight: var(--font-medium);">{{ payout.chaplainName }}</span>
+                <span style="font-weight: var(--font-semibold); font-variant-numeric: tabular-nums;">${{ payout.payoutAmount.toFixed(2) }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: var(--text-sm); color: var(--color-muted);">
+                <span>Check #{{ payout.checkNumber }}</span>
+                <span>{{ formatDate(payout.createdAt) }}</span>
+              </div>
+              <span class="badge badge-paid" style="margin-top: var(--space-2);">Paid</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Action Button + Summary (Mobile) -->
+    <div style="position: fixed; bottom: calc(var(--bottom-nav-height) + var(--safe-area-bottom)); left: 0; right: 0; background: var(--color-background); border-top: 2px solid var(--color-border); padding: var(--space-4); box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.1); z-index: var(--z-sticky);">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
+        <div>
+          <div style="font-size: var(--text-xs); color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.05em;">Selected</div>
+          <div style="font-size: var(--text-base); font-weight: var(--font-semibold);">{{ selectedCount }} of {{ qualifyingChaplains.length }}</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: var(--text-xs); color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.05em;">Total</div>
+          <div style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--color-primary); font-variant-numeric: tabular-nums;">${{ selectedTotal.toFixed(2) }}</div>
+        </div>
+      </div>
+      <button
+        class="btn btn-primary"
+        style="width: 100%;"
+        :disabled="selectedCount === 0"
+        @click="processPayout"
+      >
+        <i data-lucide="send"></i>
+        Process Payout
+      </button>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="bottom-nav-item">
+        <i data-lucide="layout-dashboard"></i>
+        <span>Dashboard</span>
+      </button>
+      <button class="bottom-nav-item">
+        <i data-lucide="users"></i>
+        <span>Users</span>
+      </button>
+      <button class="bottom-nav-item">
+        <i data-lucide="calendar-days"></i>
+        <span>Duty</span>
+      </button>
+      <button class="bottom-nav-item active">
+        <i data-lucide="dollar-sign"></i>
+        <span>Stipends</span>
+      </button>
+      <button class="bottom-nav-item">
+        <i data-lucide="more-horizontal"></i>
+        <span>More</span>
+      </button>
+    </nav>
+  </div>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+  data() {
+    return {
+      isMobile: false,
+      selectedMonth: 2, // February (1-indexed)
+      showPreviousPayouts: false,
+      months: [
+        { index: 1, name: 'Jan', status: 'complete' },
+        { index: 2, name: 'Feb', status: 'current' },
+        { index: 3, name: 'Mar', status: 'upcoming' },
+        { index: 4, name: 'Apr', status: 'upcoming' },
+        { index: 5, name: 'May', status: 'upcoming' },
+        { index: 6, name: 'Jun', status: 'upcoming' },
+        { index: 7, name: 'Jul', status: 'upcoming' },
+        { index: 8, name: 'Aug', status: 'upcoming' },
+        { index: 9, name: 'Sep', status: 'upcoming' },
+        { index: 10, name: 'Oct', status: 'upcoming' },
+        { index: 11, name: 'Nov', status: 'upcoming' },
+        { index: 12, name: 'Dec', status: 'upcoming' },
+      ],
+      qualifyingChaplains: [],
+      previousPayouts: [],
+      baseRate: 80,
+    };
+  },
+  computed: {
+    selectedMonthName() {
+      const names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      return names[this.selectedMonth - 1];
+    },
+    totalUnpaidShifts() {
+      return this.qualifyingChaplains.reduce((sum, c) => sum + c.shiftCount, 0);
+    },
+    estimatedTotal() {
+      return this.qualifyingChaplains.reduce((sum, c) => sum + c.total, 0);
+    },
+    selectedCount() {
+      return this.qualifyingChaplains.filter(c => c.selected).length;
+    },
+    selectedTotal() {
+      return this.qualifyingChaplains
+        .filter(c => c.selected)
+        .reduce((sum, c) => sum + c.total, 0);
+    },
+    allSelected() {
+      return this.qualifyingChaplains.length > 0 && this.qualifyingChaplains.every(c => c.selected);
+    },
+  },
+  methods: {
+    checkMobile() {
+      this.isMobile = window.innerWidth < 768;
+    },
+    loadData() {
+      // Get unpaid duty logs for selected month
+      const unpaidLogs = mockHelpers.getUnpaidDutyLogs(this.selectedMonth, 2026);
+
+      // Group by chaplain
+      const chaplainMap = new Map();
+      unpaidLogs.forEach(log => {
+        if (!chaplainMap.has(log.userId)) {
+          const user = mockDb.getById('users', log.userId);
+          chaplainMap.set(log.userId, {
+            userId: log.userId,
+            name: user?.displayName || 'Unknown',
+            initials: this.getInitials(user?.displayName || 'Unknown'),
+            shiftCount: 0,
+            totalHours: 0,
+            baseAmount: 0,
+            adjustment: 0,
+            total: 0,
+            selected: false,
+          });
+        }
+        const chaplain = chaplainMap.get(log.userId);
+        chaplain.shiftCount += 1;
+        chaplain.totalHours += log.totalHours || 0;
+      });
+
+      // Calculate amounts
+      this.qualifyingChaplains = Array.from(chaplainMap.values()).map(c => {
+        c.baseAmount = c.shiftCount * this.baseRate;
+        // Mock adjustments (±$10 per 3 shifts)
+        c.adjustment = Math.floor(c.shiftCount / 3) * (Math.random() > 0.5 ? 10 : -10);
+        c.total = c.baseAmount + c.adjustment;
+        return c;
+      });
+
+      // Load previous payouts (January)
+      const januaryPayouts = mockDb.query('chaplain_payouts', p => p.monthPaid === 'January' && p.yearPaid === 2026);
+      this.previousPayouts = januaryPayouts.map(p => {
+        const chaplain = mockDb.getById('users', p.chaplainId);
+        return {
+          ...p,
+          chaplainName: chaplain?.displayName || 'Unknown',
+        };
+      });
+    },
+    getInitials(name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    },
+    toggleChaplain(userId) {
+      const chaplain = this.qualifyingChaplains.find(c => c.userId === userId);
+      if (chaplain) chaplain.selected = !chaplain.selected;
+    },
+    toggleSelectAll() {
+      const newState = !this.allSelected;
+      this.qualifyingChaplains.forEach(c => c.selected = newState);
+    },
+    processPayout() {
+      if (this.selectedCount === 0) return;
+      alert(`Process payout for ${this.selectedCount} chaplains totaling $${this.selectedTotal.toFixed(2)}\n\nIn production, this would:\n1. Prompt for check number\n2. Create payout records\n3. Mark duty logs as paid\n4. Update stipend history`);
+    },
+    formatDate(dateStr) {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    },
+  },
+  mounted() {
+    this.checkMobile();
+    window.addEventListener('resize', this.checkMobile);
+
+    document.addEventListener('mockdb:ready', () => {
+      this.loadData();
+      this.$nextTick(() => {
+        lucide.createIcons();
+      });
+    });
+
+    // If mockDb already initialized
+    if (mockDb.getRaw()) {
+      this.loadData();
+      this.$nextTick(() => {
+        lucide.createIcons();
+      });
+    }
+  },
+  updated() {
+    this.$nextTick(() => {
+      lucide.createIcons();
+    });
+  },
+}).mount('#app');
+</script>
+
+</body>
+</html>

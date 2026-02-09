@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Stipend Detail - COMPASS</title>
+
+  <!-- CDN Stack -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@unocss/reset/tailwind.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <link rel="stylesheet" href="../shared/components.css">
+  <script src="../shared/mock-data.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============================================
+       DESKTOP LAYOUT (>= 768px)
+       ============================================ -->
+  <div v-if="!isMobile" class="app-shell-desktop fade-in">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <i data-lucide="compass" style="color: #39D2C0;"></i>
+        <span>COMPASS</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="dashboard-v1.html" class="sidebar-link">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="users-v1.html" class="sidebar-link">
+          <i data-lucide="users"></i>
+          <span>Users</span>
+        </a>
+        <a href="duty-days-v1.html" class="sidebar-link">
+          <i data-lucide="clock"></i>
+          <span>Duty Days</span>
+        </a>
+        <a href="coverage-v1.html" class="sidebar-link">
+          <i data-lucide="calendar-check"></i>
+          <span>Coverage</span>
+        </a>
+        <a href="stipends-v1.html" class="sidebar-link active">
+          <i data-lucide="dollar-sign"></i>
+          <span>Stipends</span>
+        </a>
+        <a href="reports-v1.html" class="sidebar-link">
+          <i data-lucide="bar-chart-3"></i>
+          <span>Reports</span>
+        </a>
+
+        <div class="sidebar-section-label">System</div>
+        <a href="settings-v1.html" class="sidebar-link">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="avatar avatar-md">
+          <img src="https://i.pravatar.cc/150?img=5" alt="Admin">
+        </div>
+        <div style="flex: 1;">
+          <div class="sidebar-user-name">Linda Martinez</div>
+          <div class="sidebar-user-role">Administrator</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <header class="topbar">
+        <div class="topbar-title" style="display: flex; align-items: center; gap: var(--space-3);">
+          <a href="stipends-v1.html" style="display: inline-flex; align-items: center; gap: var(--space-2); color: var(--color-muted); text-decoration: none; font-size: var(--text-sm); font-weight: var(--font-medium);">
+            <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
+            Back to Stipends
+          </a>
+        </div>
+        <div class="topbar-actions">
+          <span class="badge" :class="payout.isPaid ? 'badge-paid' : 'badge-pending'" style="font-size: var(--text-sm); padding: var(--space-1) var(--space-3);">
+            {{ payout.isPaid ? 'Completed' : 'Pending' }}
+          </span>
+        </div>
+      </header>
+
+      <main class="content-scroll">
+
+        <!-- Loading State -->
+        <div v-if="loading" style="display: flex; flex-direction: column; gap: var(--space-6);">
+          <div class="skeleton" style="height: 120px; width: 100%;"></div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4);">
+            <div class="skeleton" style="height: 100px;"></div>
+            <div class="skeleton" style="height: 100px;"></div>
+            <div class="skeleton" style="height: 100px;"></div>
+            <div class="skeleton" style="height: 100px;"></div>
+          </div>
+          <div class="skeleton" style="height: 300px; width: 100%;"></div>
+        </div>
+
+        <!-- Payout Content -->
+        <div v-if="!loading">
+
+          <!-- Payout Header Card -->
+          <div class="card fade-in" style="margin-bottom: var(--space-6); padding: var(--space-6);">
+            <div style="display: flex; align-items: center; gap: var(--space-5);">
+              <div class="avatar avatar-xl" style="background: var(--color-primary-100); color: var(--color-primary-700); font-size: var(--text-2xl);">
+                <img v-if="chaplain.photoUrl" :src="chaplain.photoUrl" :alt="chaplain.displayName">
+                <span v-else>{{ getInitials(chaplain.displayName) }}</span>
+              </div>
+              <div style="flex: 1;">
+                <div style="font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--color-foreground); margin-bottom: var(--space-1);">
+                  {{ chaplain.displayName || 'Unknown Chaplain' }}
+                </div>
+                <div style="font-size: var(--text-sm); color: var(--color-muted); display: flex; align-items: center; gap: var(--space-4);">
+                  <span>{{ chaplain.title || 'Chaplain' }}</span>
+                  <span>&middot;</span>
+                  <span>{{ payout.monthPaid }} {{ payout.yearPaid }}</span>
+                  <span>&middot;</span>
+                  <span>{{ payout.dutyLogCount }} shift(s)</span>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-success); font-variant-numeric: tabular-nums;">
+                  ${{ payout.payoutAmount ? payout.payoutAmount.toFixed(2) : '0.00' }}
+                </div>
+                <div style="font-size: var(--text-sm); color: var(--color-muted);">Total Payout</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary Stat Cards -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); margin-bottom: var(--space-6);" class="stagger-in">
+            <div class="kpi-card card-hover">
+              <div class="kpi-label">Qualifying Hours</div>
+              <div class="kpi-value" style="font-size: var(--text-2xl);">{{ totalHours.toFixed(1) }} hrs</div>
+              <div class="kpi-trend neutral">Across {{ dutyLogs.length }} shift(s)</div>
+            </div>
+
+            <div class="kpi-card card-hover">
+              <div class="kpi-label">Base Rate</div>
+              <div class="kpi-value" style="font-size: var(--text-2xl);">${{ baseRate.toFixed(2) }}/shift</div>
+              <div class="kpi-trend neutral">Per qualifying shift</div>
+            </div>
+
+            <div class="kpi-card card-hover">
+              <div class="kpi-label">Adjustments</div>
+              <div class="kpi-value" style="font-size: var(--text-2xl);" :style="{ color: totalAdjustment > 0 ? 'var(--color-success)' : totalAdjustment < 0 ? 'var(--color-error)' : 'var(--color-foreground)' }">
+                {{ totalAdjustment > 0 ? '+' : '' }}${{ totalAdjustment.toFixed(2) }}
+              </div>
+              <div class="kpi-trend neutral">{{ totalAdjustment === 0 ? 'No adjustments' : 'Applied' }}</div>
+            </div>
+
+            <div class="kpi-card card-hover" style="border-left: 3px solid var(--color-success);">
+              <div class="kpi-label">Total Payout</div>
+              <div class="kpi-value" style="font-size: var(--text-2xl); color: var(--color-success); font-variant-numeric: tabular-nums;">
+                ${{ payout.payoutAmount ? payout.payoutAmount.toFixed(2) : '0.00' }}
+              </div>
+              <div class="kpi-trend neutral">
+                {{ payout.dutyLogCount }} shifts &times; ${{ baseRate.toFixed(2) }}{{ totalAdjustment !== 0 ? ' + adj.' : '' }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Duty Logs Table -->
+          <div class="card fade-in" style="margin-bottom: var(--space-6);">
+            <div class="card-header">
+              <h2 class="card-title">Duty Logs Included</h2>
+              <p class="card-subtitle">All shifts included in this payout calculation</p>
+            </div>
+
+            <div v-if="dutyLogs.length === 0" class="empty-state" style="padding: var(--space-8) var(--space-4);">
+              <i data-lucide="clock"></i>
+              <p>No duty logs found for this payout</p>
+            </div>
+
+            <div v-else class="table-wrapper" style="margin-top: var(--space-4);">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Terminal</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th style="text-align: right;">Hours</th>
+                    <th style="text-align: right;">Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="log in dutyLogs" :key="log.id">
+                    <td style="font-weight: var(--font-medium);">{{ formatDateFull(log.startTime) }}</td>
+                    <td>{{ getTerminalForLog(log) }}</td>
+                    <td>{{ formatTime(log.startTime) }}</td>
+                    <td>{{ log.endTime ? formatTime(log.endTime) : 'In progress' }}</td>
+                    <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: var(--font-medium);">
+                      {{ log.totalHours ? log.totalHours.toFixed(1) : '---' }}
+                    </td>
+                    <td style="text-align: right; font-variant-numeric: tabular-nums;">
+                      ${{ (log.paymentAmount || baseRate).toFixed(2) }}
+                    </td>
+                    <td>
+                      <span v-if="log.isPaid" class="badge badge-paid">Paid</span>
+                      <span v-else-if="log.approved" class="badge badge-approved">Approved</span>
+                      <span v-else class="badge badge-pending">Pending</span>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr style="background: var(--color-gray-50);">
+                    <td colspan="4" style="font-weight: var(--font-semibold); border-top: 2px solid var(--color-border);">Total</td>
+                    <td style="text-align: right; font-weight: var(--font-bold); font-variant-numeric: tabular-nums; border-top: 2px solid var(--color-border);">
+                      {{ totalHours.toFixed(1) }}
+                    </td>
+                    <td style="text-align: right; font-weight: var(--font-bold); font-variant-numeric: tabular-nums; color: var(--color-success); border-top: 2px solid var(--color-border);">
+                      ${{ payout.payoutAmount ? payout.payoutAmount.toFixed(2) : '0.00' }}
+                    </td>
+                    <td style="border-top: 2px solid var(--color-border);"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Bottom Row: Payout Details + Timeline -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); margin-bottom: var(--space-8);">
+
+            <!-- Payout Details -->
+            <div class="card fade-in">
+              <div class="card-header">
+                <h2 class="card-title">Payout Details</h2>
+                <p class="card-subtitle">Payment and processing information</p>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-2);">
+                <div style="display: flex; justify-content: space-between; padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md);">
+                  <span style="font-size: var(--text-sm); color: var(--color-muted);">Check Number</span>
+                  <span style="font-weight: var(--font-semibold); font-family: var(--font-mono);">{{ payout.checkNumber || 'N/A' }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md);">
+                  <span style="font-size: var(--text-sm); color: var(--color-muted);">Processed Date</span>
+                  <span style="font-weight: var(--font-medium);">{{ formatDateFull(payout.createdAt) }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md);">
+                  <span style="font-size: var(--text-sm); color: var(--color-muted);">Processed By</span>
+                  <span style="font-weight: var(--font-medium);">{{ processedByName }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md);">
+                  <span style="font-size: var(--text-sm); color: var(--color-muted);">Period</span>
+                  <span style="font-weight: var(--font-medium);">{{ payout.monthPaid }} {{ payout.yearPaid }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md);">
+                  <span style="font-size: var(--text-sm); color: var(--color-muted);">Shifts Included</span>
+                  <span style="font-weight: var(--font-medium);">{{ payout.dutyLogCount }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="card fade-in">
+              <div class="card-header">
+                <h2 class="card-title">Processing Timeline</h2>
+                <p class="card-subtitle">Steps in the payout workflow</p>
+              </div>
+
+              <div style="margin-top: var(--space-3); position: relative; padding-left: var(--space-8);">
+                <!-- Timeline line -->
+                <div style="position: absolute; left: 15px; top: 8px; bottom: 8px; width: 2px; background: var(--color-border);"></div>
+
+                <div v-for="(step, index) in timelineSteps" :key="index" style="position: relative; margin-bottom: var(--space-5);">
+                  <!-- Timeline dot -->
+                  <div style="position: absolute; left: calc(-1 * var(--space-8) + 8px); top: 4px; width: 16px; height: 16px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;"
+                       :style="{
+                         background: step.completed ? 'var(--color-success)' : 'var(--color-gray-200)',
+                         border: step.completed ? '2px solid var(--color-success)' : '2px solid var(--color-gray-300)'
+                       }">
+                    <i v-if="step.completed" data-lucide="check" style="width: 10px; height: 10px; color: white;"></i>
+                  </div>
+
+                  <div>
+                    <div style="font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--color-foreground);">
+                      {{ step.label }}
+                    </div>
+                    <div style="font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-0-5);">
+                      {{ step.detail }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </main>
+    </div>
+
+  </div>
+
+
+  <!-- ============================================
+       MOBILE LAYOUT (< 768px)
+       ============================================ -->
+  <div v-if="isMobile" class="app-shell-mobile fade-in">
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+      <a href="stipends-v1.html" style="display: flex; align-items: center; text-decoration: none; color: var(--color-foreground);">
+        <i data-lucide="arrow-left" style="width: 20px; height: 20px;"></i>
+      </a>
+      <h1 class="mobile-header-title" style="flex: 1; text-align: center;">Payout Detail</h1>
+      <span class="badge" :class="payout.isPaid ? 'badge-paid' : 'badge-pending'" style="font-size: 10px;">
+        {{ payout.isPaid ? 'Paid' : 'Pending' }}
+      </span>
+    </header>
+
+    <!-- Mobile Content -->
+    <main class="mobile-content">
+
+      <!-- Loading State -->
+      <div v-if="loading" style="display: flex; flex-direction: column; gap: var(--space-4);">
+        <div class="skeleton" style="height: 100px; width: 100%;"></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+          <div class="skeleton" style="height: 80px;"></div>
+          <div class="skeleton" style="height: 80px;"></div>
+          <div class="skeleton" style="height: 80px;"></div>
+          <div class="skeleton" style="height: 80px;"></div>
+        </div>
+        <div class="skeleton" style="height: 200px; width: 100%;"></div>
+      </div>
+
+      <!-- Content -->
+      <div v-if="!loading">
+
+        <!-- Chaplain Header -->
+        <div class="card" style="margin-bottom: var(--space-4); padding: var(--space-4);">
+          <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3);">
+            <div class="avatar avatar-lg" style="background: var(--color-primary-100); color: var(--color-primary-700);">
+              <img v-if="chaplain.photoUrl" :src="chaplain.photoUrl" :alt="chaplain.displayName">
+              <span v-else>{{ getInitials(chaplain.displayName) }}</span>
+            </div>
+            <div style="flex: 1;">
+              <div style="font-weight: var(--font-bold); font-size: var(--text-base);">{{ chaplain.displayName || 'Unknown' }}</div>
+              <div style="font-size: var(--text-xs); color: var(--color-muted);">{{ payout.monthPaid }} {{ payout.yearPaid }}</div>
+            </div>
+          </div>
+          <div style="text-align: center; padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md);">
+            <div style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-success); font-variant-numeric: tabular-nums;">
+              ${{ payout.payoutAmount ? payout.payoutAmount.toFixed(2) : '0.00' }}
+            </div>
+            <div style="font-size: var(--text-xs); color: var(--color-muted);">Total Payout</div>
+          </div>
+        </div>
+
+        <!-- Stats 2x2 Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-4);" class="stagger-in">
+          <div class="kpi-card pressable">
+            <div class="kpi-label">Hours</div>
+            <div class="kpi-value" style="font-size: var(--text-xl);">{{ totalHours.toFixed(1) }}</div>
+          </div>
+          <div class="kpi-card pressable">
+            <div class="kpi-label">Rate</div>
+            <div class="kpi-value" style="font-size: var(--text-xl);">${{ baseRate.toFixed(0) }}</div>
+          </div>
+          <div class="kpi-card pressable">
+            <div class="kpi-label">Adjustments</div>
+            <div class="kpi-value" style="font-size: var(--text-xl);" :style="{ color: totalAdjustment > 0 ? 'var(--color-success)' : totalAdjustment < 0 ? 'var(--color-error)' : '' }">
+              {{ totalAdjustment > 0 ? '+' : '' }}${{ totalAdjustment.toFixed(0) }}
+            </div>
+          </div>
+          <div class="kpi-card pressable" style="border-left: 3px solid var(--color-success);">
+            <div class="kpi-label">Total</div>
+            <div class="kpi-value" style="font-size: var(--text-xl); color: var(--color-success);">
+              ${{ payout.payoutAmount ? payout.payoutAmount.toFixed(0) : '0' }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Duty Log Cards (Mobile) -->
+        <div class="card" style="margin-bottom: var(--space-4);">
+          <div class="card-header">
+            <h2 class="card-title">Duty Logs</h2>
+            <p class="card-subtitle">{{ dutyLogs.length }} shift(s) included</p>
+          </div>
+
+          <div v-if="dutyLogs.length === 0" style="padding: var(--space-4); text-align: center; color: var(--color-muted); font-size: var(--text-sm);">
+            No duty logs found
+          </div>
+
+          <div v-else style="display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-2);">
+            <div v-for="log in dutyLogs" :key="log.id"
+                 class="pressable"
+                 style="padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-1);">
+                <span style="font-weight: var(--font-semibold); font-size: var(--text-sm);">{{ formatDateFull(log.startTime) }}</span>
+                <span v-if="log.isPaid" class="badge badge-paid" style="font-size: 10px;">Paid</span>
+                <span v-else class="badge badge-pending" style="font-size: 10px;">Pending</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--color-muted);">
+                <span>{{ getTerminalForLog(log) }}</span>
+                <span>{{ formatTime(log.startTime) }} - {{ log.endTime ? formatTime(log.endTime) : 'In progress' }}</span>
+                <span style="font-weight: var(--font-medium); color: var(--color-foreground);">{{ log.totalHours ? log.totalHours.toFixed(1) + 'h' : '---' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payout Info Card (Mobile) -->
+        <div class="card" style="margin-bottom: var(--space-4);">
+          <div class="card-header">
+            <h2 class="card-title">Payment Info</h2>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-2);">
+            <div style="display: flex; justify-content: space-between; padding: var(--space-2); font-size: var(--text-sm);">
+              <span style="color: var(--color-muted);">Check #</span>
+              <span style="font-weight: var(--font-semibold); font-family: var(--font-mono);">{{ payout.checkNumber || 'N/A' }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: var(--space-2); font-size: var(--text-sm); background: var(--color-surface); border-radius: var(--radius-sm);">
+              <span style="color: var(--color-muted);">Processed</span>
+              <span style="font-weight: var(--font-medium);">{{ formatDateFull(payout.createdAt) }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: var(--space-2); font-size: var(--text-sm);">
+              <span style="color: var(--color-muted);">Processed By</span>
+              <span style="font-weight: var(--font-medium);">{{ processedByName }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline (Mobile) -->
+        <div class="card" style="margin-bottom: var(--space-4);">
+          <div class="card-header">
+            <h2 class="card-title">Timeline</h2>
+          </div>
+
+          <div style="margin-top: var(--space-2); padding-left: var(--space-6); position: relative;">
+            <div style="position: absolute; left: 11px; top: 8px; bottom: 8px; width: 2px; background: var(--color-border);"></div>
+
+            <div v-for="(step, index) in timelineSteps" :key="index" style="position: relative; margin-bottom: var(--space-4);">
+              <div style="position: absolute; left: calc(-1 * var(--space-6) + 4px); top: 2px; width: 14px; height: 14px; border-radius: var(--radius-full);"
+                   :style="{
+                     background: step.completed ? 'var(--color-success)' : 'var(--color-gray-200)',
+                     border: step.completed ? '2px solid var(--color-success)' : '2px solid var(--color-gray-300)'
+                   }">
+              </div>
+              <div style="font-size: var(--text-sm); font-weight: var(--font-medium);">{{ step.label }}</div>
+              <div style="font-size: var(--text-xs); color: var(--color-muted);">{{ step.detail }}</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <a href="dashboard-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="layout-dashboard"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="users-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="users"></i>
+        <span>Users</span>
+      </a>
+      <a href="duty-days-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="clock"></i>
+        <span>Duty</span>
+      </a>
+      <a href="stipends-v1.html" class="bottom-nav-item active" style="text-decoration: none;">
+        <i data-lucide="dollar-sign"></i>
+        <span>Stipends</span>
+      </a>
+      <a href="reports-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="bar-chart-3"></i>
+        <span>Reports</span>
+      </a>
+    </nav>
+
+  </div>
+
+</div>
+
+<script>
+const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+
+createApp({
+  setup() {
+    // Responsive state
+    const isMobile = ref(window.innerWidth < 768);
+    const onResize = () => {
+      isMobile.value = window.innerWidth < 768;
+    };
+
+    // Data state
+    const loading = ref(true);
+    const payout = ref({});
+    const chaplain = ref({});
+    const dutyLogs = ref([]);
+    const users = ref([]);
+    const settings = ref({});
+
+    // Derived
+    const baseRate = computed(() => settings.value.baseStipendRate || 80);
+
+    const totalHours = computed(() => {
+      return dutyLogs.value.reduce((sum, log) => sum + (log.totalHours || 0), 0);
+    });
+
+    const totalAdjustment = computed(() => {
+      return dutyLogs.value.reduce((sum, log) => sum + (log.adjustmentAmount || 0), 0);
+    });
+
+    const processedByName = computed(() => {
+      if (!payout.value.createdBy) return 'System';
+      const admin = users.value.find(u => u.id === payout.value.createdBy);
+      return admin ? admin.displayName : 'Unknown Admin';
+    });
+
+    const timelineSteps = computed(() => {
+      const isPaid = payout.value.isPaid;
+      return [
+        {
+          label: 'Period Selected',
+          detail: `${payout.value.monthPaid || 'January'} ${payout.value.yearPaid || 2026}`,
+          completed: true
+        },
+        {
+          label: 'Qualification Verified',
+          detail: `${payout.value.dutyLogCount || 0} qualifying shift(s) identified`,
+          completed: true
+        },
+        {
+          label: 'Amount Calculated',
+          detail: `Base $${((payout.value.dutyLogCount || 0) * baseRate.value).toFixed(2)} + adjustments`,
+          completed: true
+        },
+        {
+          label: 'Check Issued',
+          detail: payout.value.checkNumber ? `Check #${payout.value.checkNumber}` : 'Awaiting check number',
+          completed: isPaid
+        },
+        {
+          label: 'Payout Recorded',
+          detail: isPaid ? formatDateFull(payout.value.createdAt) : 'Pending recording',
+          completed: isPaid
+        }
+      ];
+    });
+
+    // Helpers
+    function getInitials(name) {
+      if (!name) return '?';
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+
+    function formatDateFull(dateStr) {
+      if (!dateStr) return '---';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function formatTime(dateStr) {
+      if (!dateStr) return '---';
+      const d = new Date(dateStr);
+      return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+
+    function getTerminalForLog(log) {
+      const user = users.value.find(u => u.id === log.userId);
+      return user?.terminals?.[0] ? `Terminal ${user.terminals[0]}` : '---';
+    }
+
+    // Data loading
+    function loadData() {
+      const params = new URLSearchParams(window.location.search);
+      const payoutId = params.get('id');
+
+      users.value = mockDb.getAll('users');
+      settings.value = mockHelpers.getSettings() || {};
+
+      const allPayouts = mockDb.getAll('chaplain_payouts');
+      const targetPayout = payoutId
+        ? allPayouts.find(p => p.id === payoutId)
+        : allPayouts[0];
+
+      if (targetPayout) {
+        payout.value = targetPayout;
+        chaplain.value = mockDb.getById('users', targetPayout.chaplainId) || {};
+
+        // Get related duty logs
+        const allLogs = mockHelpers.getDutyLogsForChaplain(targetPayout.chaplainId);
+        // Filter to logs included in this payout (by ID list) or fallback to paid logs for the month
+        if (targetPayout.dutyLogIds && targetPayout.dutyLogIds.length > 0) {
+          const logIds = new Set(targetPayout.dutyLogIds);
+          dutyLogs.value = allLogs.filter(l => logIds.has(l.id));
+          // If some referenced logs don't exist in mock data (duty-old-*), show what we have
+          if (dutyLogs.value.length === 0) {
+            dutyLogs.value = allLogs
+              .filter(l => l.isPaid && l.payoutId === targetPayout.id)
+              .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+          }
+        } else {
+          dutyLogs.value = allLogs
+            .filter(l => l.isPaid)
+            .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+        }
+      } else {
+        // Fallback: show first payout
+        payout.value = allPayouts[0] || {};
+        chaplain.value = allPayouts[0] ? (mockDb.getById('users', allPayouts[0].chaplainId) || {}) : {};
+        dutyLogs.value = [];
+      }
+
+      loading.value = false;
+    }
+
+    // Lifecycle
+    onMounted(() => {
+      window.addEventListener('resize', onResize);
+
+      document.addEventListener('mockdb:ready', () => {
+        loadData();
+        Vue.nextTick(() => { lucide.createIcons(); });
+      });
+
+      // If already loaded
+      if (mockDb.getRaw()) {
+        loadData();
+        Vue.nextTick(() => { lucide.createIcons(); });
+      }
+
+      lucide.createIcons();
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('resize', onResize);
+    });
+
+    return {
+      isMobile,
+      loading,
+      payout,
+      chaplain,
+      dutyLogs,
+      users,
+      baseRate,
+      totalHours,
+      totalAdjustment,
+      processedByName,
+      timelineSteps,
+      getInitials,
+      formatDateFull,
+      formatTime,
+      getTerminalForLog
+    };
+  }
+}).mount('#app');
+</script>
+
+</body>
+</html>

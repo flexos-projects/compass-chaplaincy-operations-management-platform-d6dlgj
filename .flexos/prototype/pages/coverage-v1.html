@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Coverage Schedule - COMPASS</title>
+
+  <!-- CDN Stack -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@unocss/reset/tailwind.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <link rel="stylesheet" href="../shared/components.css">
+  <script src="../shared/mock-data.js"></script>
+
+  <style>
+    .coverage-grid-table {
+      display: grid;
+      gap: 2px;
+      width: 100%;
+    }
+    .grid-header-cell {
+      padding: var(--space-2) var(--space-1);
+      font-size: var(--text-xs);
+      font-weight: var(--font-semibold);
+      color: var(--color-muted);
+      text-align: center;
+      background: var(--color-surface);
+      border-radius: var(--radius-sm);
+    }
+    .grid-hour-label {
+      padding: var(--space-2) var(--space-2);
+      font-size: var(--text-xs);
+      font-weight: var(--font-medium);
+      color: var(--color-muted);
+      text-align: right;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .grid-cell {
+      min-height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: var(--font-semibold);
+      transition: all var(--transition-fast);
+      position: relative;
+    }
+    .grid-cell.filled {
+      background: var(--color-accent-200);
+      border-color: var(--color-accent-400);
+      color: var(--color-accent-800);
+    }
+    .grid-cell.empty {
+      background: var(--color-gray-100);
+      border-color: var(--color-gray-200);
+    }
+    .grid-cell.gap-cell {
+      background: var(--color-warning-100);
+      border-color: var(--color-warning-400);
+    }
+    .grid-cell.editable {
+      cursor: pointer;
+    }
+    @media (hover: hover) {
+      .grid-cell.editable:hover {
+        transform: scale(1.05);
+        box-shadow: var(--shadow-md);
+        z-index: 1;
+      }
+      .grid-cell.editable.empty:hover {
+        background: var(--color-accent-50);
+        border-color: var(--color-accent-300);
+      }
+      .grid-cell.editable.filled:hover {
+        background: var(--color-error-100);
+        border-color: var(--color-error-300);
+      }
+    }
+    .progress-bar-bg {
+      height: 8px;
+      background: var(--color-gray-200);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      transition: width var(--transition-slow);
+    }
+    .day-tab {
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--text-sm);
+      font-weight: var(--font-medium);
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+      background: var(--color-background);
+      color: var(--color-foreground);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      min-width: 40px;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .day-tab.active {
+      background: var(--color-primary);
+      color: #FFFFFF;
+      border-color: var(--color-primary);
+    }
+    .mobile-slot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-3);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      min-height: 48px;
+    }
+    .mobile-slot.filled {
+      background: var(--color-accent-50);
+      border-color: var(--color-accent-300);
+    }
+    .mobile-slot.empty {
+      background: var(--color-gray-50);
+    }
+    .mobile-slot.gap-slot {
+      background: var(--color-warning-50);
+      border-color: var(--color-warning-300);
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============================================
+       DESKTOP LAYOUT (>= 768px)
+       ============================================ -->
+  <div v-if="!isMobile" class="app-shell-desktop fade-in">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <i data-lucide="compass" style="color: #39D2C0;"></i>
+        <span>COMPASS</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="dashboard-v1.html" class="sidebar-link">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="users-v1.html" class="sidebar-link">
+          <i data-lucide="users"></i>
+          <span>Users</span>
+        </a>
+        <a href="duty-days-v1.html" class="sidebar-link">
+          <i data-lucide="clock"></i>
+          <span>Duty Days</span>
+        </a>
+        <a href="coverage-v1.html" class="sidebar-link active">
+          <i data-lucide="calendar-check"></i>
+          <span>Coverage</span>
+        </a>
+        <a href="stipends-v1.html" class="sidebar-link">
+          <i data-lucide="dollar-sign"></i>
+          <span>Stipends</span>
+        </a>
+        <a href="reports-v1.html" class="sidebar-link">
+          <i data-lucide="bar-chart-3"></i>
+          <span>Reports</span>
+        </a>
+
+        <div class="sidebar-section-label">System</div>
+        <a href="settings-v1.html" class="sidebar-link">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="avatar avatar-md">
+          <img src="https://i.pravatar.cc/150?img=5" alt="Admin">
+        </div>
+        <div style="flex: 1;">
+          <div class="sidebar-user-name">Linda Martinez</div>
+          <div class="sidebar-user-role">Administrator</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <header class="topbar">
+        <h1 class="topbar-title">Coverage Schedule</h1>
+        <div class="topbar-actions">
+          <button class="btn btn-sm" :class="editMode ? 'btn-primary' : 'btn-secondary'" @click="editMode = !editMode">
+            <i data-lucide="pencil" style="width: 14px; height: 14px;"></i>
+            {{ editMode ? 'Editing' : 'Edit' }}
+          </button>
+        </div>
+      </header>
+
+      <main class="content-scroll">
+
+        <!-- Week Selector -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-6);" class="fade-in">
+          <button class="btn btn-secondary btn-sm btn-icon" @click="prevWeek">
+            <i data-lucide="chevron-left" style="width: 18px; height: 18px;"></i>
+          </button>
+          <div style="text-align: center;">
+            <div style="font-size: var(--text-lg); font-weight: var(--font-semibold);">
+              Week {{ currentWeek }}, {{ currentYear }}
+            </div>
+            <div style="font-size: var(--text-sm); color: var(--color-muted);">{{ weekDateRange }}</div>
+          </div>
+          <button class="btn btn-secondary btn-sm btn-icon" @click="nextWeek">
+            <i data-lucide="chevron-right" style="width: 18px; height: 18px;"></i>
+          </button>
+        </div>
+
+        <!-- Edit Mode Banner -->
+        <div v-if="editMode" style="background: var(--color-primary-100); color: var(--color-primary-700); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-4); font-size: var(--text-sm); display: flex; align-items: center; gap: var(--space-2);">
+          <i data-lucide="info" style="width: 16px; height: 16px; flex-shrink: 0;"></i>
+          Edit mode enabled. Click cells to toggle coverage. Click filled cells to remove, empty cells to add.
+        </div>
+
+        <!-- Coverage Stats Bar -->
+        <div class="card" style="margin-bottom: var(--space-6);">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-4);">
+            <div style="display: flex; align-items: center; gap: var(--space-3);">
+              <span style="font-size: var(--text-sm); font-weight: var(--font-medium);">Coverage:</span>
+              <span style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--color-success);">{{ stats.filled }}</span>
+              <span style="font-size: var(--text-sm); color: var(--color-muted);">/ {{ stats.total }} slots filled</span>
+              <span style="font-size: var(--text-sm); font-weight: var(--font-semibold);">({{ stats.rate }}%)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: var(--space-4);">
+              <div style="display: flex; align-items: center; gap: var(--space-2);">
+                <div style="width: 12px; height: 12px; border-radius: var(--radius-sm); background: var(--color-accent-200); border: 1px solid var(--color-accent-400);"></div>
+                <span style="font-size: var(--text-xs); color: var(--color-muted);">Covered</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: var(--space-2);">
+                <div style="width: 12px; height: 12px; border-radius: var(--radius-sm); background: var(--color-warning-100); border: 1px solid var(--color-warning-400);"></div>
+                <span style="font-size: var(--text-xs); color: var(--color-muted);">Gap</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: var(--space-2);">
+                <div style="width: 12px; height: 12px; border-radius: var(--radius-sm); background: var(--color-gray-100); border: 1px solid var(--color-gray-200);"></div>
+                <span style="font-size: var(--text-xs); color: var(--color-muted);">Empty</span>
+              </div>
+            </div>
+          </div>
+          <div class="progress-bar-bg" style="margin-top: var(--space-3);">
+            <div class="progress-bar-fill" :style="{ width: stats.rate + '%', background: stats.rate > 70 ? 'var(--color-success)' : stats.rate > 40 ? 'var(--color-warning)' : 'var(--color-error)' }"></div>
+          </div>
+        </div>
+
+        <!-- Coverage Grid (Desktop) -->
+        <div class="card" style="overflow-x: auto;">
+          <div class="coverage-grid-table" style="display: grid; grid-template-columns: 70px repeat(7, 1fr); min-width: 640px;">
+            <!-- Header Row -->
+            <div class="grid-header-cell"></div>
+            <div v-for="day in dayNames" :key="day" class="grid-header-cell">{{ day.slice(0, 3) }}</div>
+
+            <!-- Hour Rows -->
+            <template v-for="hour in hours" :key="hour">
+              <div class="grid-hour-label">{{ formatHour(hour) }}</div>
+              <div v-for="(day, di) in dayKeys" :key="day + hour"
+                   class="grid-cell"
+                   :class="{
+                     filled: getSlot(day, hour),
+                     empty: !getSlot(day, hour) && !isGapSlot(day, hour),
+                     'gap-cell': !getSlot(day, hour) && isGapSlot(day, hour),
+                     editable: editMode
+                   }"
+                   @click="editMode && toggleSlot(day, hour)">
+                <template v-if="editMode && !getSlot(day, hour)">
+                  <i data-lucide="plus" style="width: 12px; height: 12px; opacity: 0.4;"></i>
+                </template>
+                <template v-else-if="editMode && getSlot(day, hour)">
+                  <i data-lucide="x" style="width: 12px; height: 12px; opacity: 0.4;"></i>
+                </template>
+                <template v-else-if="getSlot(day, hour)">
+                  <span style="opacity: 0.7;">&#10003;</span>
+                </template>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Gap Summary -->
+        <div v-if="gapSummary.length > 0" class="card" style="margin-top: var(--space-4);">
+          <div class="card-header">
+            <h2 class="card-title" style="font-size: var(--text-base);">Coverage Gaps</h2>
+            <p class="card-subtitle">Periods with 3+ consecutive uncovered hours</p>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+            <div v-for="gap in gapSummary" :key="gap.day + gap.start"
+                 style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+              <i data-lucide="alert-triangle" style="width: 16px; height: 16px; color: var(--color-warning-600); flex-shrink: 0;"></i>
+              <span style="font-size: var(--text-sm);">
+                <strong>{{ capitalize(gap.day) }}</strong> {{ formatHour(gap.start) }} - {{ formatHour(gap.end + 1) }}
+                <span style="color: var(--color-muted);">({{ gap.length }} hours)</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+  </div>
+
+
+  <!-- ============================================
+       MOBILE LAYOUT (< 768px)
+       ============================================ -->
+  <div v-if="isMobile" class="app-shell-mobile fade-in">
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+      <h1 class="mobile-header-title">Coverage</h1>
+      <button class="btn btn-ghost btn-icon btn-sm" :class="{ 'btn-primary': editMode }" @click="editMode = !editMode">
+        <i data-lucide="pencil" style="width: 20px; height: 20px;"></i>
+      </button>
+    </header>
+
+    <!-- Mobile Content -->
+    <main class="mobile-content">
+
+      <!-- Week Selector (Mobile) -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);" class="fade-in">
+        <button class="btn btn-secondary btn-sm btn-icon" @click="prevWeek">
+          <i data-lucide="chevron-left" style="width: 18px; height: 18px;"></i>
+        </button>
+        <div style="text-align: center;">
+          <div style="font-size: var(--text-base); font-weight: var(--font-semibold);">Week {{ currentWeek }}</div>
+          <div style="font-size: var(--text-xs); color: var(--color-muted);">{{ weekDateRange }}</div>
+        </div>
+        <button class="btn btn-secondary btn-sm btn-icon" @click="nextWeek">
+          <i data-lucide="chevron-right" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+
+      <!-- Coverage Stats (Mobile) -->
+      <div class="card" style="margin-bottom: var(--space-4);">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); text-align: center;">
+          <div>
+            <div style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--color-success);">{{ stats.filled }}</div>
+            <div style="font-size: var(--text-xs); color: var(--color-muted);">Filled</div>
+          </div>
+          <div>
+            <div style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--color-error);">{{ stats.empty }}</div>
+            <div style="font-size: var(--text-xs); color: var(--color-muted);">Empty</div>
+          </div>
+          <div>
+            <div style="font-size: var(--text-xl); font-weight: var(--font-bold);">{{ stats.rate }}%</div>
+            <div style="font-size: var(--text-xs); color: var(--color-muted);">Rate</div>
+          </div>
+        </div>
+        <div class="progress-bar-bg" style="margin-top: var(--space-3);">
+          <div class="progress-bar-fill" :style="{ width: stats.rate + '%', background: stats.rate > 70 ? 'var(--color-success)' : stats.rate > 40 ? 'var(--color-warning)' : 'var(--color-error)' }"></div>
+        </div>
+      </div>
+
+      <!-- Day Selector Tabs -->
+      <div style="display: flex; gap: var(--space-2); margin-bottom: var(--space-4); overflow-x: auto; padding-bottom: var(--space-1);">
+        <button v-for="(day, i) in dayKeys" :key="day"
+                class="day-tab pressable"
+                :class="{ active: selectedDay === day }"
+                @click="selectedDay = day">
+          {{ dayNames[i].slice(0, 1) }}
+        </button>
+      </div>
+
+      <!-- Mobile Slot List for Selected Day -->
+      <div style="display: flex; flex-direction: column; gap: var(--space-2);" class="stagger-in">
+        <div v-for="hour in hours" :key="hour"
+             class="mobile-slot pressable"
+             :class="{
+               filled: getSlot(selectedDay, hour),
+               empty: !getSlot(selectedDay, hour) && !isGapSlot(selectedDay, hour),
+               'gap-slot': !getSlot(selectedDay, hour) && isGapSlot(selectedDay, hour)
+             }"
+             @click="editMode && toggleSlot(selectedDay, hour)">
+          <div style="display: flex; align-items: center; gap: var(--space-2);">
+            <span style="font-size: var(--text-sm); font-weight: var(--font-medium); min-width: 56px;">{{ formatHour(hour) }}</span>
+            <span v-if="getSlot(selectedDay, hour)" class="badge badge-success" style="font-size: 10px;">Covered</span>
+            <span v-else-if="isGapSlot(selectedDay, hour)" class="badge badge-warning" style="font-size: 10px;">Gap</span>
+            <span v-else style="font-size: var(--text-xs); color: var(--color-muted);">Open</span>
+          </div>
+          <div v-if="editMode">
+            <i v-if="getSlot(selectedDay, hour)" data-lucide="x" style="width: 16px; height: 16px; color: var(--color-error);"></i>
+            <i v-else data-lucide="plus" style="width: 16px; height: 16px; color: var(--color-success);"></i>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <a href="dashboard-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="layout-dashboard"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="users-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="users"></i>
+        <span>Users</span>
+      </a>
+      <a href="duty-days-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="clock"></i>
+        <span>Duty</span>
+      </a>
+      <a href="stipends-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="dollar-sign"></i>
+        <span>Stipends</span>
+      </a>
+      <a href="reports-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="bar-chart-3"></i>
+        <span>Reports</span>
+      </a>
+    </nav>
+
+  </div>
+
+</div>
+
+<script>
+const { createApp, ref, computed, onMounted, onUnmounted, watch, nextTick } = Vue;
+
+createApp({
+  setup() {
+    const isMobile = ref(window.innerWidth < 768);
+    const onResize = () => { isMobile.value = window.innerWidth < 768; };
+
+    const editMode = ref(false);
+    const coverageSchedules = ref([]);
+    const users = ref([]);
+
+    // Week navigation
+    const now = new Date();
+    const currentWeek = ref(getWeekNumber(now));
+    const currentYear = ref(now.getFullYear());
+    const selectedDay = ref('monday');
+
+    const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const hours = [];
+    for (let h = 5; h <= 21; h++) hours.push(h);
+
+    // Current schedule
+    const schedule = computed(() => {
+      return coverageSchedules.value.find(
+        s => s.weekNumber === currentWeek.value && s.year === currentYear.value
+      ) || null;
+    });
+
+    // Get slot value
+    function getSlot(day, hour) {
+      if (!schedule.value || !schedule.value.slots || !schedule.value.slots[day]) return false;
+      return !!schedule.value.slots[day][String(hour)];
+    }
+
+    // Toggle slot (in-memory)
+    function toggleSlot(day, hour) {
+      if (!schedule.value) return;
+      if (!schedule.value.slots[day]) schedule.value.slots[day] = {};
+      const key = String(hour);
+      schedule.value.slots[day][key] = !schedule.value.slots[day][key];
+      nextTick(() => lucide.createIcons());
+    }
+
+    // Gap detection per day
+    function getGapsForDay(day) {
+      const gaps = [];
+      let gapStart = null;
+      let gapLength = 0;
+      for (const hour of hours) {
+        if (!getSlot(day, hour)) {
+          if (gapStart === null) gapStart = hour;
+          gapLength++;
+        } else {
+          if (gapLength >= 3) {
+            gaps.push({ day, start: gapStart, end: gapStart + gapLength - 1, length: gapLength });
+          }
+          gapStart = null;
+          gapLength = 0;
+        }
+      }
+      if (gapLength >= 3) {
+        gaps.push({ day, start: gapStart, end: gapStart + gapLength - 1, length: gapLength });
+      }
+      return gaps;
+    }
+
+    // All gaps across all days
+    const gapSummary = computed(() => {
+      const allGaps = [];
+      dayKeys.forEach(day => {
+        allGaps.push(...getGapsForDay(day));
+      });
+      return allGaps;
+    });
+
+    // Is this slot part of a gap (3+ consecutive)?
+    function isGapSlot(day, hour) {
+      if (getSlot(day, hour)) return false;
+      const gaps = getGapsForDay(day);
+      return gaps.some(g => hour >= g.start && hour <= g.end);
+    }
+
+    // Coverage stats
+    const stats = computed(() => {
+      let filled = 0;
+      let total = 0;
+      dayKeys.forEach(day => {
+        hours.forEach(hour => {
+          total++;
+          if (getSlot(day, hour)) filled++;
+        });
+      });
+      const rate = total > 0 ? Math.round((filled / total) * 100) : 0;
+      return { filled, empty: total - filled, total, rate };
+    });
+
+    // Week date range label
+    const weekDateRange = computed(() => {
+      const d = getDateOfWeek(currentWeek.value, currentYear.value);
+      const end = new Date(d);
+      end.setDate(end.getDate() + 6);
+      const opts = { month: 'short', day: 'numeric' };
+      return d.toLocaleDateString('en-US', opts) + ' - ' + end.toLocaleDateString('en-US', { ...opts, year: 'numeric' });
+    });
+
+    function prevWeek() {
+      if (currentWeek.value <= 1) {
+        currentYear.value--;
+        currentWeek.value = 52;
+      } else {
+        currentWeek.value--;
+      }
+      nextTick(() => lucide.createIcons());
+    }
+
+    function nextWeek() {
+      if (currentWeek.value >= 52) {
+        currentYear.value++;
+        currentWeek.value = 1;
+      } else {
+        currentWeek.value++;
+      }
+      nextTick(() => lucide.createIcons());
+    }
+
+    function formatHour(h) {
+      if (h === 0) return '12 AM';
+      if (h < 12) return h + ' AM';
+      if (h === 12) return '12 PM';
+      return (h - 12) + ' PM';
+    }
+
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function getWeekNumber(date) {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    }
+
+    function getDateOfWeek(week, year) {
+      const jan1 = new Date(year, 0, 1);
+      const daysOffset = (week - 1) * 7;
+      const dayOfWeek = jan1.getDay();
+      const mondayOffset = dayOfWeek <= 1 ? 1 - dayOfWeek : 8 - dayOfWeek;
+      const firstMonday = new Date(year, 0, 1 + mondayOffset);
+      const result = new Date(firstMonday);
+      result.setDate(result.getDate() + (week - 1) * 7 - (week > 1 ? 7 : 0));
+      // Simpler: just approximate
+      const simple = new Date(year, 0, 1 + (week - 1) * 7);
+      const dow = simple.getDay();
+      const diff = dow === 0 ? -6 : 1 - dow;
+      simple.setDate(simple.getDate() + diff);
+      return simple;
+    }
+
+    onMounted(() => {
+      window.addEventListener('resize', onResize);
+      document.addEventListener('mockdb:ready', () => {
+        coverageSchedules.value = mockDb.getAll('coverage_schedules');
+        users.value = mockDb.getAll('users');
+        nextTick(() => lucide.createIcons());
+      });
+      lucide.createIcons();
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('resize', onResize);
+    });
+
+    return {
+      isMobile, editMode, currentWeek, currentYear, selectedDay,
+      dayKeys, dayNames, hours, schedule, stats, gapSummary, weekDateRange,
+      getSlot, toggleSlot, isGapSlot,
+      prevWeek, nextWeek, formatHour, capitalize
+    };
+  }
+}).mount('#app');
+</script>
+
+</body>
+</html>

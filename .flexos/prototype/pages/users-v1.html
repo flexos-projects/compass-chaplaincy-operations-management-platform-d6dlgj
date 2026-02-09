@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Users - COMPASS</title>
+
+  <!-- CDN Stack -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@unocss/reset/tailwind.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <link rel="stylesheet" href="../shared/components.css">
+  <script src="../shared/mock-data.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============================================
+       DESKTOP LAYOUT (>= 768px)
+       ============================================ -->
+  <div v-if="!isMobile" class="app-shell-desktop fade-in">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <i data-lucide="compass" style="color: #39D2C0;"></i>
+        <span>COMPASS</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="dashboard-v1.html" class="sidebar-link">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="users-v1.html" class="sidebar-link active">
+          <i data-lucide="users"></i>
+          <span>Users</span>
+        </a>
+        <a href="duty-days-v1.html" class="sidebar-link">
+          <i data-lucide="clock"></i>
+          <span>Duty Days</span>
+        </a>
+        <a href="coverage-v1.html" class="sidebar-link">
+          <i data-lucide="calendar-check"></i>
+          <span>Coverage</span>
+        </a>
+        <a href="stipends-v1.html" class="sidebar-link">
+          <i data-lucide="dollar-sign"></i>
+          <span>Stipends</span>
+        </a>
+        <a href="reports-v1.html" class="sidebar-link">
+          <i data-lucide="bar-chart-3"></i>
+          <span>Reports</span>
+        </a>
+
+        <div class="sidebar-section-label">System</div>
+        <a href="settings-v1.html" class="sidebar-link">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="avatar avatar-md">
+          <img src="https://i.pravatar.cc/150?img=5" alt="Admin">
+        </div>
+        <div style="flex: 1;">
+          <div class="sidebar-user-name">Linda Martinez</div>
+          <div class="sidebar-user-role">Administrator</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <header class="topbar">
+        <div style="display: flex; align-items: center; gap: var(--space-3);">
+          <h1 class="topbar-title">Users</h1>
+          <span style="font-size: var(--text-sm); color: var(--color-muted); font-weight: var(--font-medium);">
+            ({{ allUsers.length }} total)
+          </span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-primary btn-sm" disabled title="Coming in v1.1">
+            <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+            Add User
+          </button>
+        </div>
+      </header>
+
+      <main class="content-scroll">
+
+        <!-- Search Bar -->
+        <div style="margin-bottom: var(--space-5); max-width: 400px;">
+          <div style="position: relative;">
+            <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--color-muted); pointer-events: none;"></i>
+            <input
+              v-model="searchTerm"
+              type="text"
+              class="input"
+              placeholder="Search by name or email..."
+              style="padding-left: 40px; padding-right: 36px;"
+            >
+            <button
+              v-if="searchTerm"
+              @click="searchTerm = ''"
+              style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--color-muted); padding: 4px;"
+              title="Clear search"
+            >
+              <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Role Filter Chips -->
+        <div class="chip-group" style="margin-bottom: var(--space-6);">
+          <button
+            v-for="filter in roleFilters"
+            :key="filter.key"
+            class="chip"
+            :class="{ active: activeFilter === filter.key }"
+            @click="activeFilter = filter.key"
+          >
+            {{ filter.label }}
+            <span style="margin-left: var(--space-1); opacity: 0.8;">({{ filter.count }})</span>
+          </button>
+        </div>
+
+        <!-- Loading Skeleton -->
+        <div v-if="loading" class="stagger-in" style="display: flex; flex-direction: column; gap: var(--space-3);">
+          <div v-for="i in 5" :key="i" style="display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
+            <div class="skeleton" style="width: 48px; height: 48px; border-radius: var(--radius-full);"></div>
+            <div style="flex: 1;">
+              <div class="skeleton" style="width: 160px; height: 14px; margin-bottom: 8px;"></div>
+              <div class="skeleton" style="width: 200px; height: 12px;"></div>
+            </div>
+            <div class="skeleton" style="width: 80px; height: 24px; border-radius: var(--radius-full);"></div>
+          </div>
+        </div>
+
+        <!-- User Cards Grid -->
+        <div v-else-if="filteredUsers.length > 0"
+             style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--space-4);"
+             class="stagger-in">
+          <a v-for="user in filteredUsers" :key="user.id"
+             :href="'user-detail-v1.html?id=' + user.id"
+             class="card card-hover"
+             style="text-decoration: none; color: inherit; cursor: pointer; display: flex; align-items: flex-start; gap: var(--space-4);">
+
+            <!-- Avatar -->
+            <div class="avatar avatar-xl" style="flex-shrink: 0;">
+              <img v-if="user.photoUrl" :src="user.photoUrl" :alt="user.displayName">
+              <span v-else>{{ user.displayName.charAt(0) }}</span>
+            </div>
+
+            <!-- Info -->
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1);">
+                <span style="font-weight: var(--font-semibold); font-size: var(--text-base);">
+                  {{ user.displayName }}
+                </span>
+                <!-- On-duty indicator -->
+                <span v-if="user.onDuty"
+                      style="width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--color-success); display: inline-block; flex-shrink: 0;"
+                      title="On Duty"></span>
+              </div>
+
+              <!-- Role badge -->
+              <div style="margin-bottom: var(--space-2);">
+                <span class="badge" :class="getRoleBadgeClass(user)">
+                  {{ getRoleLabel(user) }}
+                </span>
+                <span v-if="user.onDuty" class="badge badge-on-duty" style="margin-left: var(--space-1);">
+                  On Duty
+                </span>
+              </div>
+
+              <!-- Contact -->
+              <div style="font-size: var(--text-sm); color: var(--color-muted); display: flex; flex-direction: column; gap: 2px;">
+                <div style="display: flex; align-items: center; gap: var(--space-1-5);">
+                  <i data-lucide="mail" style="width: 13px; height: 13px; flex-shrink: 0;"></i>
+                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ user.email }}</span>
+                </div>
+                <div v-if="user.phoneNumber" style="display: flex; align-items: center; gap: var(--space-1-5);">
+                  <i data-lucide="phone" style="width: 13px; height: 13px; flex-shrink: 0;"></i>
+                  <span>{{ user.phoneNumber }}</span>
+                </div>
+              </div>
+
+              <!-- Terminals -->
+              <div v-if="user.terminals && user.terminals.length" style="margin-top: var(--space-2); font-size: var(--text-xs); color: var(--color-muted);">
+                Terminals: {{ user.terminals.join(', ') }}
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Empty State -->
+        <div v-else class="empty-state">
+          <i data-lucide="search"></i>
+          <h3>No users found</h3>
+          <p v-if="searchTerm">No users match "{{ searchTerm }}". Try a different search.</p>
+          <p v-else>No users in this filter. Adjust your filters.</p>
+          <button class="btn btn-secondary" style="margin-top: var(--space-4);" @click="searchTerm = ''; activeFilter = 'all'">
+            Clear Filters
+          </button>
+        </div>
+
+      </main>
+    </div>
+
+  </div>
+
+
+  <!-- ============================================
+       MOBILE LAYOUT (< 768px)
+       ============================================ -->
+  <div v-if="isMobile" class="app-shell-mobile fade-in">
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+      <h1 class="mobile-header-title">Users</h1>
+      <span style="font-size: var(--text-sm); color: var(--color-muted);">{{ allUsers.length }}</span>
+    </header>
+
+    <!-- Mobile Content -->
+    <main class="mobile-content">
+
+      <!-- Search Bar -->
+      <div style="margin-bottom: var(--space-4);">
+        <div style="position: relative;">
+          <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--color-muted); pointer-events: none;"></i>
+          <input
+            v-model="searchTerm"
+            type="text"
+            class="input"
+            placeholder="Search by name or email..."
+            style="padding-left: 40px; padding-right: 36px;"
+          >
+          <button
+            v-if="searchTerm"
+            @click="searchTerm = ''"
+            style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--color-muted); padding: 4px;"
+          >
+            <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Role Filter Chips (horizontal scroll) -->
+      <div style="display: flex; gap: var(--space-2); overflow-x: auto; padding-bottom: var(--space-3); margin-bottom: var(--space-4); -webkit-overflow-scrolling: touch;">
+        <button
+          v-for="filter in roleFilters"
+          :key="filter.key"
+          class="chip"
+          :class="{ active: activeFilter === filter.key }"
+          @click="activeFilter = filter.key"
+          style="flex-shrink: 0;"
+        >
+          {{ filter.label }} ({{ filter.count }})
+        </button>
+      </div>
+
+      <!-- Loading Skeleton (Mobile) -->
+      <div v-if="loading" class="stagger-in" style="display: flex; flex-direction: column; gap: var(--space-3);">
+        <div v-for="i in 4" :key="i" style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
+          <div class="skeleton" style="width: 44px; height: 44px; border-radius: var(--radius-full);"></div>
+          <div style="flex: 1;">
+            <div class="skeleton" style="width: 120px; height: 14px; margin-bottom: 6px;"></div>
+            <div class="skeleton" style="width: 160px; height: 11px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Cards (Mobile - stacked) -->
+      <div v-else-if="filteredUsers.length > 0" class="stagger-in" style="display: flex; flex-direction: column; gap: var(--space-3);">
+        <a v-for="user in filteredUsers" :key="user.id"
+           :href="'user-detail-v1.html?id=' + user.id"
+           class="card pressable"
+           style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3);">
+
+          <!-- Avatar -->
+          <div class="avatar avatar-lg" style="flex-shrink: 0;">
+            <img v-if="user.photoUrl" :src="user.photoUrl" :alt="user.displayName">
+            <span v-else>{{ user.displayName.charAt(0) }}</span>
+          </div>
+
+          <!-- Info -->
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: 2px;">
+              <span style="font-weight: var(--font-semibold); font-size: var(--text-sm);">
+                {{ user.displayName }}
+              </span>
+              <span v-if="user.onDuty"
+                    style="width: 7px; height: 7px; border-radius: var(--radius-full); background: var(--color-success); display: inline-block; flex-shrink: 0;"></span>
+            </div>
+            <div style="font-size: var(--text-xs); color: var(--color-muted); margin-bottom: 4px;">
+              {{ user.email }}
+            </div>
+            <div style="display: flex; gap: var(--space-1);">
+              <span class="badge" :class="getRoleBadgeClass(user)" style="font-size: 10px; padding: 1px 6px;">
+                {{ getRoleLabel(user) }}
+              </span>
+              <span v-if="user.onDuty" class="badge badge-on-duty" style="font-size: 10px; padding: 1px 6px;">
+                Active
+              </span>
+            </div>
+          </div>
+
+          <!-- Arrow -->
+          <i data-lucide="chevron-right" style="width: 18px; height: 18px; color: var(--color-muted); flex-shrink: 0;"></i>
+        </a>
+      </div>
+
+      <!-- Empty State (Mobile) -->
+      <div v-else style="text-align: center; padding: var(--space-10) var(--space-4); color: var(--color-muted);">
+        <i data-lucide="search" style="width: 40px; height: 40px; margin: 0 auto var(--space-3); display: block; opacity: 0.5;"></i>
+        <p style="font-size: var(--text-sm); margin-bottom: var(--space-3);">
+          <span v-if="searchTerm">No users match "{{ searchTerm }}"</span>
+          <span v-else>No users in this filter</span>
+        </p>
+        <button class="btn btn-secondary btn-sm" @click="searchTerm = ''; activeFilter = 'all'">
+          Clear Filters
+        </button>
+      </div>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <a href="dashboard-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="layout-dashboard"></i>
+        <span>Dashboard</span>
+      </a>
+      <button class="bottom-nav-item active">
+        <i data-lucide="users"></i>
+        <span>Users</span>
+      </button>
+      <a href="duty-days-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="clock"></i>
+        <span>Duty</span>
+      </a>
+      <a href="stipends-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="dollar-sign"></i>
+        <span>Stipends</span>
+      </a>
+      <a href="settings-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="more-horizontal"></i>
+        <span>More</span>
+      </a>
+    </nav>
+
+  </div>
+
+</div>
+
+<script>
+const { createApp, ref, computed, onMounted, onUnmounted, watch, nextTick } = Vue;
+
+createApp({
+  setup() {
+    // Responsive state
+    const isMobile = ref(window.innerWidth < 768);
+    const onResize = () => {
+      isMobile.value = window.innerWidth < 768;
+    };
+
+    // Data state
+    const allUsers = ref([]);
+    const loading = ref(true);
+    const searchTerm = ref('');
+    const activeFilter = ref('all');
+
+    // Role filters with counts
+    const roleFilters = computed(() => {
+      const users = allUsers.value;
+      return [
+        { key: 'all', label: 'All Users', count: users.length },
+        { key: 'chaplains', label: 'Chaplains', count: users.filter(u => u.isChaplain).length },
+        { key: 'interns', label: 'Interns', count: users.filter(u => u.isIntern).length },
+        { key: 'admins', label: 'Admins', count: users.filter(u => u.role === 'admin').length },
+        { key: 'support', label: 'Support', count: users.filter(u => u.isSupportMember).length },
+      ];
+    });
+
+    // Filtered users
+    const filteredUsers = computed(() => {
+      let users = [...allUsers.value];
+
+      // Apply role filter
+      switch (activeFilter.value) {
+        case 'chaplains':
+          users = users.filter(u => u.isChaplain);
+          break;
+        case 'interns':
+          users = users.filter(u => u.isIntern);
+          break;
+        case 'admins':
+          users = users.filter(u => u.role === 'admin');
+          break;
+        case 'support':
+          users = users.filter(u => u.isSupportMember);
+          break;
+      }
+
+      // Apply search filter
+      if (searchTerm.value.trim()) {
+        const term = searchTerm.value.toLowerCase().trim();
+        users = users.filter(u =>
+          u.displayName.toLowerCase().includes(term) ||
+          u.email.toLowerCase().includes(term)
+        );
+      }
+
+      // Sort: on-duty first, then by name
+      users.sort((a, b) => {
+        if (a.onDuty && !b.onDuty) return -1;
+        if (!a.onDuty && b.onDuty) return 1;
+        return a.displayName.localeCompare(b.displayName);
+      });
+
+      return users;
+    });
+
+    // Helpers
+    function getRoleLabel(user) {
+      if (user.role === 'admin') return 'Admin';
+      if (user.isIntern) return 'Intern';
+      if (user.isChaplain) return 'Chaplain';
+      if (user.isSupportMember) return 'Support';
+      return user.role || 'User';
+    }
+
+    function getRoleBadgeClass(user) {
+      if (user.role === 'admin') return 'badge-primary';
+      if (user.isIntern) return 'badge-warning';
+      if (user.isChaplain) return 'badge-success';
+      if (user.isSupportMember) return 'badge-gray';
+      return 'badge-gray';
+    }
+
+    // Re-init Lucide icons when data or filters change
+    watch([filteredUsers, isMobile], () => {
+      nextTick(() => lucide.createIcons());
+    });
+
+    // Lifecycle
+    onMounted(() => {
+      window.addEventListener('resize', onResize);
+
+      document.addEventListener('mockdb:ready', () => {
+        allUsers.value = mockDb.getAll('users');
+        loading.value = false;
+
+        nextTick(() => lucide.createIcons());
+      });
+
+      lucide.createIcons();
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('resize', onResize);
+    });
+
+    return {
+      isMobile,
+      allUsers,
+      loading,
+      searchTerm,
+      activeFilter,
+      roleFilters,
+      filteredUsers,
+      getRoleLabel,
+      getRoleBadgeClass
+    };
+  }
+}).mount('#app');
+</script>
+
+</body>
+</html>

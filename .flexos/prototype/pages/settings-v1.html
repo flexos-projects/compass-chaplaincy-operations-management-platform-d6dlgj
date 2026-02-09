@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Settings - COMPASS</title>
+
+  <!-- CDN Stack -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@unocss/reset/tailwind.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <link rel="stylesheet" href="../shared/components.css">
+  <script src="../shared/mock-data.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Toast Notification -->
+  <div v-if="toast.show"
+       style="position: fixed; top: var(--space-4); right: var(--space-4); z-index: var(--z-tooltip); padding: var(--space-3) var(--space-5); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: var(--font-medium); display: flex; align-items: center; gap: var(--space-2); box-shadow: var(--shadow-lg); animation: slideUp 300ms ease both;"
+       :style="{
+         background: toast.type === 'success' ? 'var(--color-success)' : 'var(--color-error)',
+         color: '#FFFFFF'
+       }">
+    <i :data-lucide="toast.type === 'success' ? 'check-circle' : 'alert-circle'" style="width: 16px; height: 16px;"></i>
+    {{ toast.message }}
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div v-if="confirmModal.show" style="position: fixed; inset: 0; z-index: var(--z-modal); display: flex; align-items: center; justify-content: center;">
+    <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.4);" @click="confirmModal.show = false"></div>
+    <div class="card scale-in" style="position: relative; max-width: 420px; width: 90%; padding: var(--space-6); z-index: 1;">
+      <div style="font-size: var(--text-lg); font-weight: var(--font-semibold); margin-bottom: var(--space-2);">
+        {{ confirmModal.title }}
+      </div>
+      <div style="font-size: var(--text-sm); color: var(--color-muted); margin-bottom: var(--space-5);">
+        {{ confirmModal.message }}
+      </div>
+      <div style="display: flex; gap: var(--space-3); justify-content: flex-end;">
+        <button class="btn btn-secondary" @click="confirmModal.show = false">Cancel</button>
+        <button class="btn" :class="confirmModal.danger ? 'btn-danger' : 'btn-primary'" @click="confirmModal.onConfirm(); confirmModal.show = false;">
+          {{ confirmModal.confirmLabel || 'Confirm' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       DESKTOP LAYOUT (>= 768px)
+       ============================================ -->
+  <div v-if="!isMobile" class="app-shell-desktop fade-in">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <i data-lucide="compass" style="color: #39D2C0;"></i>
+        <span>COMPASS</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="dashboard-v1.html" class="sidebar-link">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="users-v1.html" class="sidebar-link">
+          <i data-lucide="users"></i>
+          <span>Users</span>
+        </a>
+        <a href="duty-days-v1.html" class="sidebar-link">
+          <i data-lucide="clock"></i>
+          <span>Duty Days</span>
+        </a>
+        <a href="coverage-v1.html" class="sidebar-link">
+          <i data-lucide="calendar-check"></i>
+          <span>Coverage</span>
+        </a>
+        <a href="stipends-v1.html" class="sidebar-link">
+          <i data-lucide="dollar-sign"></i>
+          <span>Stipends</span>
+        </a>
+        <a href="reports-v1.html" class="sidebar-link">
+          <i data-lucide="bar-chart-3"></i>
+          <span>Reports</span>
+        </a>
+
+        <div class="sidebar-section-label">System</div>
+        <a href="settings-v1.html" class="sidebar-link active">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="avatar avatar-md">
+          <img src="https://i.pravatar.cc/150?img=5" alt="Admin">
+        </div>
+        <div style="flex: 1;">
+          <div class="sidebar-user-name">Linda Martinez</div>
+          <div class="sidebar-user-role">Administrator</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <header class="topbar">
+        <h1 class="topbar-title">System Settings</h1>
+        <div class="topbar-actions">
+          <span v-if="hasChanges" style="font-size: var(--text-sm); color: var(--color-warning); font-weight: var(--font-medium); display: flex; align-items: center; gap: var(--space-1);">
+            <i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i>
+            Unsaved changes
+          </span>
+        </div>
+      </header>
+
+      <main class="content-scroll">
+
+        <!-- Loading State -->
+        <div v-if="loading" style="display: flex; flex-direction: column; gap: var(--space-6);">
+          <div class="skeleton" style="height: 200px; width: 100%;"></div>
+          <div class="skeleton" style="height: 250px; width: 100%;"></div>
+          <div class="skeleton" style="height: 150px; width: 100%;"></div>
+        </div>
+
+        <!-- Settings Content -->
+        <div v-if="!loading" style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-6); align-items: start;">
+
+          <!-- Left Column: Settings Forms -->
+          <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+
+            <!-- Section 1: Stipend Configuration -->
+            <div class="card fade-in">
+              <div class="card-header" style="display: flex; align-items: center; gap: var(--space-3);">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--color-success-100); display: flex; align-items: center; justify-content: center;">
+                  <i data-lucide="dollar-sign" style="width: 20px; height: 20px; color: var(--color-success-700);"></i>
+                </div>
+                <div>
+                  <h2 class="card-title">Stipend Configuration</h2>
+                  <p class="card-subtitle">Payment rates and calculation settings</p>
+                </div>
+              </div>
+
+              <div style="margin-top: var(--space-5); display: flex; flex-direction: column; gap: var(--space-5);">
+                <!-- Base Stipend Rate -->
+                <div class="input-group">
+                  <label class="label" for="stipend-rate">Base Stipend Rate (per qualifying shift)</label>
+                  <div style="display: flex; align-items: center; gap: var(--space-2);">
+                    <span style="font-size: var(--text-lg); font-weight: var(--font-semibold); color: var(--color-muted);">$</span>
+                    <input
+                      id="stipend-rate"
+                      type="number"
+                      class="input"
+                      v-model.number="form.baseStipendRate"
+                      min="10"
+                      max="500"
+                      step="0.01"
+                      style="max-width: 200px; font-variant-numeric: tabular-nums;"
+                    >
+                  </div>
+                  <p style="font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-1);">
+                    Current rate: ${{ originalSettings.baseStipendRate || 80 }}.00 per qualifying duty shift. Changing this rate affects future payments only.
+                  </p>
+                </div>
+
+                <!-- Minimum Hours for Qualification -->
+                <div class="input-group">
+                  <label class="label" for="min-hours">Minimum Hours for Qualification</label>
+                  <input
+                    id="min-hours"
+                    type="number"
+                    class="input"
+                    v-model.number="form.minQualifyingHours"
+                    min="1"
+                    max="24"
+                    style="max-width: 200px;"
+                  >
+                  <p style="font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-1);">
+                    Shifts shorter than this are not eligible for stipend payment.
+                  </p>
+                </div>
+
+                <div style="display: flex; gap: var(--space-3);">
+                  <button class="btn btn-primary" @click="saveStipendSettings">
+                    <i data-lucide="save" style="width: 16px; height: 16px;"></i>
+                    Save Stipend Settings
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 2: Admin Users -->
+            <div class="card fade-in">
+              <div class="card-header" style="display: flex; align-items: center; gap: var(--space-3);">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--color-primary-100); display: flex; align-items: center; justify-content: center;">
+                  <i data-lucide="shield" style="width: 20px; height: 20px; color: var(--color-primary-700);"></i>
+                </div>
+                <div>
+                  <h2 class="card-title">Admin Users</h2>
+                  <p class="card-subtitle">{{ adminUsers.length }} user(s) with administrative access</p>
+                </div>
+              </div>
+
+              <!-- Admin List -->
+              <div style="margin-top: var(--space-4);">
+                <div v-if="adminUsers.length === 0" style="padding: var(--space-4); text-align: center; color: var(--color-muted); font-size: var(--text-sm);">
+                  No admin users configured
+                </div>
+
+                <div v-else style="display: flex; flex-direction: column; gap: var(--space-2);">
+                  <div v-for="admin in adminUsers" :key="admin.id"
+                       style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+                    <div class="avatar avatar-md">
+                      <img v-if="admin.photoUrl" :src="admin.photoUrl" :alt="admin.displayName">
+                      <span v-else>{{ getInitials(admin.displayName) }}</span>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="font-weight: var(--font-medium); font-size: var(--text-sm);">{{ admin.displayName }}</div>
+                      <div style="font-size: var(--text-xs); color: var(--color-muted);">{{ admin.email }}</div>
+                    </div>
+                    <span class="badge badge-primary">{{ admin.role === 'admin' ? 'Admin' : admin.title || 'User' }}</span>
+                    <button class="btn btn-ghost btn-sm" style="color: var(--color-error);" @click="confirmRemoveAdmin(admin)">
+                      <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Add Admin -->
+              <div style="margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border);">
+                <label class="label">Add Admin User</label>
+                <div style="display: flex; gap: var(--space-2);">
+                  <input
+                    type="email"
+                    class="input"
+                    v-model="newAdminEmail"
+                    placeholder="Enter user email address..."
+                    style="flex: 1;"
+                    @keyup.enter="addAdmin"
+                  >
+                  <button class="btn btn-primary" @click="addAdmin" :disabled="!newAdminEmail.trim()">
+                    <i data-lucide="user-plus" style="width: 16px; height: 16px;"></i>
+                    Grant Admin
+                  </button>
+                </div>
+                <p style="font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-1);">
+                  Enter the email of an existing COMPASS user to grant administrative access.
+                </p>
+              </div>
+            </div>
+
+            <!-- Section 4: Danger Zone -->
+            <div class="card fade-in" style="border: 1px solid var(--color-error-200);">
+              <div class="card-header" style="display: flex; align-items: center; gap: var(--space-3);">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--color-error-100); display: flex; align-items: center; justify-content: center;">
+                  <i data-lucide="alert-triangle" style="width: 20px; height: 20px; color: var(--color-error);"></i>
+                </div>
+                <div>
+                  <h2 class="card-title" style="color: var(--color-error);">Danger Zone</h2>
+                  <p class="card-subtitle">Irreversible actions. Proceed with caution.</p>
+                </div>
+              </div>
+
+              <div style="margin-top: var(--space-4); display: flex; gap: var(--space-3);">
+                <button class="btn btn-secondary" @click="exportData">
+                  <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+                  Export All Data
+                </button>
+                <button class="btn btn-danger" @click="confirmResetData">
+                  <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+                  Reset Test Data
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right Column: Info Cards -->
+          <div style="display: flex; flex-direction: column; gap: var(--space-5); position: sticky; top: var(--space-8);">
+
+            <!-- Organization -->
+            <div class="card fade-in">
+              <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
+                <i data-lucide="building-2" style="width: 20px; height: 20px; color: var(--color-primary);"></i>
+                <span style="font-weight: var(--font-semibold);">Organization</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                <div>
+                  <div style="font-size: var(--text-xs); color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.05em;">Name</div>
+                  <div style="font-size: var(--text-sm); font-weight: var(--font-medium); margin-top: var(--space-0-5);">{{ settings.orgName || 'Not configured' }}</div>
+                </div>
+                <div>
+                  <div style="font-size: var(--text-xs); color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.05em;">Short Code</div>
+                  <div style="font-size: var(--text-sm); font-weight: var(--font-medium); margin-top: var(--space-0-5);">{{ settings.orgAbbrev || 'N/A' }}</div>
+                </div>
+                <div>
+                  <div style="font-size: var(--text-xs); color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.05em;">Terminals</div>
+                  <div style="display: flex; gap: var(--space-1); margin-top: var(--space-1);">
+                    <span v-for="t in (settings.terminals || [])" :key="t" class="badge badge-gray">{{ t }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Database -->
+            <div class="card fade-in">
+              <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
+                <i data-lucide="database" style="width: 20px; height: 20px; color: var(--color-accent);"></i>
+                <span style="font-weight: var(--font-semibold);">Database</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                <div style="display: flex; justify-content: space-between; font-size: var(--text-sm);">
+                  <span style="color: var(--color-muted);">Users</span>
+                  <span style="font-weight: var(--font-medium);">{{ collectionCounts.users }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: var(--text-sm);">
+                  <span style="color: var(--color-muted);">Duty Logs</span>
+                  <span style="font-weight: var(--font-medium);">{{ collectionCounts.dutyLogs }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: var(--text-sm);">
+                  <span style="color: var(--color-muted);">Metrics</span>
+                  <span style="font-weight: var(--font-medium);">{{ collectionCounts.metrics }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: var(--text-sm);">
+                  <span style="color: var(--color-muted);">Payouts</span>
+                  <span style="font-weight: var(--font-medium);">{{ collectionCounts.payouts }}</span>
+                </div>
+                <hr class="divider" style="margin: var(--space-1) 0;">
+                <div style="font-size: var(--text-xs); color: var(--color-muted);">
+                  Last backup: Feb 8, 2026
+                </div>
+              </div>
+            </div>
+
+            <!-- Version -->
+            <div class="card fade-in">
+              <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
+                <i data-lucide="info" style="width: 20px; height: 20px; color: var(--color-muted);"></i>
+                <span style="font-weight: var(--font-semibold);">Version</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                <div>
+                  <div style="font-size: var(--text-xs); color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.05em;">Version</div>
+                  <div style="font-size: var(--text-sm); font-weight: var(--font-medium); font-family: var(--font-mono); margin-top: var(--space-0-5);">v1.0.0-mvp</div>
+                </div>
+                <div>
+                  <div style="font-size: var(--text-xs); color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.05em;">Program Year</div>
+                  <div style="font-size: var(--text-sm); font-weight: var(--font-medium); margin-top: var(--space-0-5);">{{ settings.programYear || 2026 }}</div>
+                </div>
+                <div>
+                  <div style="font-size: var(--text-xs); color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.05em;">Deployed</div>
+                  <div style="font-size: var(--text-sm); font-weight: var(--font-medium); margin-top: var(--space-0-5);">Feb 1, 2026</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </main>
+    </div>
+
+  </div>
+
+
+  <!-- ============================================
+       MOBILE LAYOUT (< 768px)
+       ============================================ -->
+  <div v-if="isMobile" class="app-shell-mobile fade-in">
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+      <h1 class="mobile-header-title">Settings</h1>
+      <button class="btn btn-ghost btn-icon btn-sm">
+        <i data-lucide="more-vertical" style="width: 20px; height: 20px;"></i>
+      </button>
+    </header>
+
+    <!-- Mobile Content -->
+    <main class="mobile-content">
+
+      <!-- Loading State -->
+      <div v-if="loading" style="display: flex; flex-direction: column; gap: var(--space-4);">
+        <div class="skeleton" style="height: 180px; width: 100%;"></div>
+        <div class="skeleton" style="height: 200px; width: 100%;"></div>
+        <div class="skeleton" style="height: 120px; width: 100%;"></div>
+      </div>
+
+      <!-- Settings Content -->
+      <div v-if="!loading" style="display: flex; flex-direction: column; gap: var(--space-4);">
+
+        <!-- Stipend Configuration -->
+        <div class="card">
+          <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4);">
+            <i data-lucide="dollar-sign" style="width: 18px; height: 18px; color: var(--color-success);"></i>
+            <span style="font-weight: var(--font-semibold);">Stipend Configuration</span>
+          </div>
+
+          <div class="input-group">
+            <label class="label" for="m-stipend-rate">Base Rate (per shift)</label>
+            <div style="display: flex; align-items: center; gap: var(--space-2);">
+              <span style="font-size: var(--text-lg); color: var(--color-muted); font-weight: var(--font-semibold);">$</span>
+              <input
+                id="m-stipend-rate"
+                type="number"
+                class="input"
+                v-model.number="form.baseStipendRate"
+                min="10"
+                max="500"
+                step="0.01"
+                style="font-variant-numeric: tabular-nums;"
+              >
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="label" for="m-min-hours">Min. Hours for Qualification</label>
+            <input
+              id="m-min-hours"
+              type="number"
+              class="input"
+              v-model.number="form.minQualifyingHours"
+              min="1"
+              max="24"
+            >
+          </div>
+
+          <button class="btn btn-primary" style="width: 100%;" @click="saveStipendSettings">
+            <i data-lucide="save" style="width: 16px; height: 16px;"></i>
+            Save
+          </button>
+        </div>
+
+        <!-- Admin Users -->
+        <div class="card">
+          <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4);">
+            <i data-lucide="shield" style="width: 18px; height: 18px; color: var(--color-primary);"></i>
+            <span style="font-weight: var(--font-semibold);">Admin Users ({{ adminUsers.length }})</span>
+          </div>
+
+          <div v-if="adminUsers.length === 0" style="padding: var(--space-3); text-align: center; color: var(--color-muted); font-size: var(--text-sm);">
+            No admin users
+          </div>
+
+          <div v-else style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-4);">
+            <div v-for="admin in adminUsers" :key="admin.id"
+                 class="pressable"
+                 style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+              <div class="avatar avatar-sm">
+                <img v-if="admin.photoUrl" :src="admin.photoUrl" :alt="admin.displayName">
+                <span v-else>{{ getInitials(admin.displayName) }}</span>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: var(--font-medium); font-size: var(--text-sm);">{{ admin.displayName }}</div>
+                <div style="font-size: 10px; color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ admin.email }}</div>
+              </div>
+              <button class="btn btn-ghost btn-icon btn-sm" style="color: var(--color-error);" @click="confirmRemoveAdmin(admin)">
+                <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Add Admin -->
+          <div style="border-top: 1px solid var(--color-border); padding-top: var(--space-3);">
+            <label class="label">Add Admin</label>
+            <div style="display: flex; gap: var(--space-2);">
+              <input
+                type="email"
+                class="input"
+                v-model="newAdminEmail"
+                placeholder="Email address..."
+                style="flex: 1;"
+                @keyup.enter="addAdmin"
+              >
+              <button class="btn btn-primary btn-icon" @click="addAdmin" :disabled="!newAdminEmail.trim()">
+                <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Info -->
+        <div class="card">
+          <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4);">
+            <i data-lucide="info" style="width: 18px; height: 18px; color: var(--color-muted);"></i>
+            <span style="font-weight: var(--font-semibold);">System Info</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+            <div style="display: flex; justify-content: space-between; padding: var(--space-2); font-size: var(--text-sm);">
+              <span style="color: var(--color-muted);">Organization</span>
+              <span style="font-weight: var(--font-medium);">{{ settings.orgAbbrev || 'N/A' }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: var(--space-2); font-size: var(--text-sm); background: var(--color-surface); border-radius: var(--radius-sm);">
+              <span style="color: var(--color-muted);">Program Year</span>
+              <span style="font-weight: var(--font-medium);">{{ settings.programYear || 2026 }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: var(--space-2); font-size: var(--text-sm);">
+              <span style="color: var(--color-muted);">Version</span>
+              <span style="font-weight: var(--font-medium); font-family: var(--font-mono);">v1.0.0-mvp</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: var(--space-2); font-size: var(--text-sm); background: var(--color-surface); border-radius: var(--radius-sm);">
+              <span style="color: var(--color-muted);">Users</span>
+              <span style="font-weight: var(--font-medium);">{{ collectionCounts.users }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: var(--space-2); font-size: var(--text-sm);">
+              <span style="color: var(--color-muted);">Payouts</span>
+              <span style="font-weight: var(--font-medium);">{{ collectionCounts.payouts }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Danger Zone (Mobile) -->
+        <div class="card" style="border: 1px solid var(--color-error-200);">
+          <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3);">
+            <i data-lucide="alert-triangle" style="width: 18px; height: 18px; color: var(--color-error);"></i>
+            <span style="font-weight: var(--font-semibold); color: var(--color-error);">Danger Zone</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+            <button class="btn btn-secondary" style="width: 100%;" @click="exportData">
+              <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+              Export All Data
+            </button>
+            <button class="btn btn-danger" style="width: 100%;" @click="confirmResetData">
+              <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+              Reset Test Data
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <a href="dashboard-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="layout-dashboard"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="users-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="users"></i>
+        <span>Users</span>
+      </a>
+      <a href="duty-days-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="clock"></i>
+        <span>Duty</span>
+      </a>
+      <a href="stipends-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="dollar-sign"></i>
+        <span>Stipends</span>
+      </a>
+      <a href="reports-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="bar-chart-3"></i>
+        <span>Reports</span>
+      </a>
+    </nav>
+
+  </div>
+
+</div>
+
+<script>
+const { createApp, ref, reactive, computed, onMounted, onUnmounted, nextTick } = Vue;
+
+createApp({
+  setup() {
+    // Responsive state
+    const isMobile = ref(window.innerWidth < 768);
+    const onResize = () => {
+      isMobile.value = window.innerWidth < 768;
+    };
+
+    // Data state
+    const loading = ref(true);
+    const settings = ref({});
+    const originalSettings = ref({});
+    const users = ref([]);
+    const newAdminEmail = ref('');
+
+    // Form state
+    const form = reactive({
+      baseStipendRate: 80,
+      minQualifyingHours: 8
+    });
+
+    // Toast
+    const toast = reactive({ show: false, type: 'success', message: '' });
+    let toastTimer = null;
+
+    function showToast(type, message) {
+      toast.show = true;
+      toast.type = type;
+      toast.message = message;
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.show = false;
+        nextTick(() => { lucide.createIcons(); });
+      }, 3000);
+      nextTick(() => { lucide.createIcons(); });
+    }
+
+    // Confirmation modal
+    const confirmModal = reactive({
+      show: false,
+      title: '',
+      message: '',
+      confirmLabel: 'Confirm',
+      danger: false,
+      onConfirm: () => {}
+    });
+
+    // Computed
+    const hasChanges = computed(() => {
+      return form.baseStipendRate !== (originalSettings.value.baseStipendRate || 80) ||
+             form.minQualifyingHours !== 8;
+    });
+
+    const adminUsers = computed(() => {
+      return users.value.filter(u => u.role === 'admin');
+    });
+
+    const collectionCounts = computed(() => {
+      const raw = mockDb.getRaw();
+      if (!raw) return { users: 0, dutyLogs: 0, metrics: 0, payouts: 0 };
+      return {
+        users: (raw.users || []).length,
+        dutyLogs: (raw.duty_logs || []).length,
+        metrics: (raw.chaplain_metrics || []).length,
+        payouts: (raw.chaplain_payouts || []).length
+      };
+    });
+
+    // Helpers
+    function getInitials(name) {
+      if (!name) return '?';
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+
+    // Actions
+    function saveStipendSettings() {
+      if (form.baseStipendRate < 10 || form.baseStipendRate > 500) {
+        showToast('error', 'Stipend rate must be between $10 and $500');
+        return;
+      }
+
+      // Update in-memory mock data
+      const raw = mockDb.getRaw();
+      if (raw && raw.app_settings) {
+        raw.app_settings.baseStipendRate = form.baseStipendRate;
+      }
+
+      originalSettings.value = { ...originalSettings.value, baseStipendRate: form.baseStipendRate };
+      showToast('success', `Stipend rate updated to $${form.baseStipendRate.toFixed(2)}`);
+    }
+
+    function addAdmin() {
+      const email = newAdminEmail.value.trim();
+      if (!email) return;
+
+      const user = users.value.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (!user) {
+        showToast('error', 'User not found. Check the email and try again.');
+        return;
+      }
+
+      if (user.role === 'admin') {
+        showToast('error', `${user.displayName} is already an admin.`);
+        return;
+      }
+
+      // Update role in-memory
+      mockDb.update('users', user.id, { role: 'admin' });
+      users.value = mockDb.getAll('users');
+      newAdminEmail.value = '';
+      showToast('success', `${user.displayName} is now an admin.`);
+      nextTick(() => { lucide.createIcons(); });
+    }
+
+    function confirmRemoveAdmin(admin) {
+      if (adminUsers.value.length <= 1) {
+        showToast('error', 'Cannot remove the last admin. Add another admin first.');
+        return;
+      }
+
+      confirmModal.title = 'Revoke Admin Access';
+      confirmModal.message = `Remove admin access for ${admin.displayName}? They will no longer be able to access the admin dashboard.`;
+      confirmModal.confirmLabel = 'Remove';
+      confirmModal.danger = true;
+      confirmModal.onConfirm = () => {
+        mockDb.update('users', admin.id, { role: 'chaplain' });
+        users.value = mockDb.getAll('users');
+        showToast('success', `Admin access revoked for ${admin.displayName}.`);
+        nextTick(() => { lucide.createIcons(); });
+      };
+      confirmModal.show = true;
+      nextTick(() => { lucide.createIcons(); });
+    }
+
+    function exportData() {
+      const raw = mockDb.getRaw();
+      const blob = new Blob([JSON.stringify(raw, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'compass-export-' + new Date().toISOString().split('T')[0] + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('success', 'Data exported successfully.');
+    }
+
+    function confirmResetData() {
+      confirmModal.title = 'Reset Test Data';
+      confirmModal.message = 'This will reload all mock data from the original source. Any in-memory changes will be lost. This action cannot be undone.';
+      confirmModal.confirmLabel = 'Reset';
+      confirmModal.danger = true;
+      confirmModal.onConfirm = () => {
+        window.location.reload();
+      };
+      confirmModal.show = true;
+      nextTick(() => { lucide.createIcons(); });
+    }
+
+    // Data loading
+    function loadData() {
+      users.value = mockDb.getAll('users');
+      settings.value = mockHelpers.getSettings() || {};
+      originalSettings.value = { ...settings.value };
+
+      form.baseStipendRate = settings.value.baseStipendRate || 80;
+      form.minQualifyingHours = 8;
+
+      loading.value = false;
+    }
+
+    // Lifecycle
+    onMounted(() => {
+      window.addEventListener('resize', onResize);
+
+      document.addEventListener('mockdb:ready', () => {
+        loadData();
+        nextTick(() => { lucide.createIcons(); });
+      });
+
+      if (mockDb.getRaw()) {
+        loadData();
+        nextTick(() => { lucide.createIcons(); });
+      }
+
+      lucide.createIcons();
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('resize', onResize);
+    });
+
+    return {
+      isMobile,
+      loading,
+      settings,
+      originalSettings,
+      form,
+      hasChanges,
+      adminUsers,
+      newAdminEmail,
+      collectionCounts,
+      toast,
+      confirmModal,
+      getInitials,
+      saveStipendSettings,
+      addAdmin,
+      confirmRemoveAdmin,
+      exportData,
+      confirmResetData
+    };
+  }
+}).mount('#app');
+</script>
+
+</body>
+</html>

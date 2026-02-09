@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Dashboard - COMPASS</title>
+
+  <!-- CDN Stack -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@unocss/reset/tailwind.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <link rel="stylesheet" href="../shared/components.css">
+  <script src="../shared/mock-data.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============================================
+       DESKTOP LAYOUT (>= 768px)
+       ============================================ -->
+  <div v-if="!isMobile" class="app-shell-desktop fade-in">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <i data-lucide="compass" style="color: #39D2C0;"></i>
+        <span>COMPASS</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="dashboard-v1.html" class="sidebar-link active">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="users-v1.html" class="sidebar-link">
+          <i data-lucide="users"></i>
+          <span>Users</span>
+        </a>
+        <a href="duty-days-v1.html" class="sidebar-link">
+          <i data-lucide="clock"></i>
+          <span>Duty Days</span>
+        </a>
+        <a href="coverage-v1.html" class="sidebar-link">
+          <i data-lucide="calendar-check"></i>
+          <span>Coverage</span>
+        </a>
+        <a href="stipends-v1.html" class="sidebar-link">
+          <i data-lucide="dollar-sign"></i>
+          <span>Stipends</span>
+        </a>
+        <a href="reports-v1.html" class="sidebar-link">
+          <i data-lucide="bar-chart-3"></i>
+          <span>Reports</span>
+        </a>
+
+        <div class="sidebar-section-label">System</div>
+        <a href="settings-v1.html" class="sidebar-link">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="avatar avatar-md">
+          <img src="https://i.pravatar.cc/150?img=5" alt="Admin">
+        </div>
+        <div style="flex: 1;">
+          <div class="sidebar-user-name">Linda Martinez</div>
+          <div class="sidebar-user-role">Administrator</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <header class="topbar">
+        <h1 class="topbar-title">Operations Dashboard</h1>
+        <div class="topbar-actions">
+          <span style="font-size: var(--text-sm); color: var(--color-muted);">
+            {{ currentDate }}
+          </span>
+        </div>
+      </header>
+
+      <main class="content-scroll">
+
+        <!-- KPI Cards Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-5); margin-bottom: var(--space-8);" class="stagger-in">
+
+          <!-- Total Chaplains -->
+          <div class="kpi-card card-hover">
+            <div class="kpi-label">Total Chaplains</div>
+            <div class="kpi-value">{{ kpis.totalChaplains || 0 }}</div>
+            <div class="kpi-trend neutral">
+              <i data-lucide="users" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i>
+              Active members
+            </div>
+          </div>
+
+          <!-- On Duty Now -->
+          <div class="kpi-card card-hover" style="border-left: 3px solid var(--color-success);">
+            <div class="kpi-label">On Duty Now</div>
+            <div class="kpi-value" style="color: var(--color-success);">{{ kpis.onDutyNow || 0 }}</div>
+            <div class="kpi-trend up">
+              <i data-lucide="circle" style="width: 8px; height: 8px; display: inline-block; vertical-align: middle; fill: currentColor;"></i>
+              Currently serving
+            </div>
+          </div>
+
+          <!-- Total Encounters -->
+          <div class="kpi-card card-hover">
+            <div class="kpi-label">Total Encounters</div>
+            <div class="kpi-value">{{ kpis.totalEncounters || 0 }}</div>
+            <div class="kpi-trend neutral">
+              Last 30 days: {{ kpis.encounters30d || 0 }}
+            </div>
+          </div>
+
+          <!-- Crisis Events -->
+          <div class="kpi-card card-hover">
+            <div class="kpi-label">Crisis Events</div>
+            <div class="kpi-value">{{ kpis.crisisEvents || 0 }}</div>
+            <div class="kpi-trend neutral">
+              Requires attention
+            </div>
+          </div>
+
+          <!-- Prayer Requests -->
+          <div class="kpi-card card-hover">
+            <div class="kpi-label">Prayer Requests</div>
+            <div class="kpi-value">{{ kpis.prayerRequests || 0 }}</div>
+            <div class="kpi-trend neutral">
+              All-time count
+            </div>
+          </div>
+
+          <!-- Jan Stipends Paid -->
+          <div class="kpi-card card-hover">
+            <div class="kpi-label">Jan Stipends Paid</div>
+            <div class="kpi-value" style="font-size: var(--text-2xl);">${{ janStipends || 0 }}</div>
+            <div class="kpi-trend neutral">
+              January 2026
+            </div>
+          </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-6); margin-bottom: var(--space-8);">
+
+          <!-- On-Duty Chaplains -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">On Duty Now</h2>
+              <p class="card-subtitle">{{ onDutyChaplains.length }} chaplain(s) active</p>
+            </div>
+
+            <div v-if="onDutyChaplains.length === 0" class="empty-state" style="padding: var(--space-8) var(--space-4);">
+              <i data-lucide="users"></i>
+              <p>No chaplains on duty right now</p>
+            </div>
+
+            <div v-else style="display: flex; flex-direction: column; gap: var(--space-3);">
+              <div v-for="chaplain in onDutyChaplains" :key="chaplain.id"
+                   style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+                <div class="avatar avatar-md">
+                  <img v-if="chaplain.photoUrl" :src="chaplain.photoUrl" :alt="chaplain.displayName">
+                  <span v-else>{{ chaplain.displayName.charAt(0) }}</span>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: var(--font-medium); font-size: var(--text-sm);">{{ chaplain.displayName }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--color-muted);">
+                    {{ chaplain.terminals?.join(', ') || 'No terminal' }}
+                  </div>
+                </div>
+                <span class="badge badge-on-duty">
+                  <i data-lucide="circle" style="width: 6px; height: 6px; fill: currentColor;"></i>
+                  On Duty
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Coverage Quick View -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Coverage Summary</h2>
+              <p class="card-subtitle">Current week overview</p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+              <div style="display: flex; justify-content: space-between; padding: var(--space-2); background: var(--color-surface); border-radius: var(--radius-md);">
+                <span style="font-size: var(--text-sm); color: var(--color-muted);">Filled Slots</span>
+                <span style="font-weight: var(--font-semibold); color: var(--color-success);">{{ coverageStats.filled }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding: var(--space-2); background: var(--color-surface); border-radius: var(--radius-md);">
+                <span style="font-size: var(--text-sm); color: var(--color-muted);">Empty Slots</span>
+                <span style="font-weight: var(--font-semibold); color: var(--color-error);">{{ coverageStats.empty }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding: var(--space-2); background: var(--color-surface); border-radius: var(--radius-md);">
+                <span style="font-size: var(--text-sm); color: var(--color-muted);">Coverage Rate</span>
+                <span style="font-weight: var(--font-semibold);">{{ coverageStats.rate }}%</span>
+              </div>
+            </div>
+
+            <div style="margin-top: var(--space-4);">
+              <a href="coverage-v1.html" class="btn btn-secondary" style="width: 100%;">
+                View Full Schedule
+                <i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Duty Logs -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Recent Duty Logs</h2>
+            <p class="card-subtitle">Last 5 entries</p>
+          </div>
+
+          <div v-if="recentDutyLogs.length === 0" class="empty-state">
+            <i data-lucide="clock"></i>
+            <p>No duty logs found</p>
+          </div>
+
+          <div v-else class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Chaplain</th>
+                  <th>Date</th>
+                  <th>Hours</th>
+                  <th>Terminal</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="log in recentDutyLogs" :key="log.id" style="cursor: pointer;">
+                  <td>
+                    <div style="display: flex; align-items: center; gap: var(--space-2);">
+                      <div class="avatar avatar-sm">
+                        <span>{{ getUserName(log.userId).charAt(0) }}</span>
+                      </div>
+                      <span style="font-weight: var(--font-medium);">{{ getUserName(log.userId) }}</span>
+                    </div>
+                  </td>
+                  <td>{{ formatDate(log.startTime) }}</td>
+                  <td>{{ log.totalHours ? log.totalHours.toFixed(1) : '—' }}</td>
+                  <td>{{ getTerminalFromUser(log.userId) }}</td>
+                  <td>
+                    <span v-if="log.isPaid" class="badge badge-paid">Paid</span>
+                    <span v-else-if="log.approved" class="badge badge-approved">Approved</span>
+                    <span v-else class="badge badge-pending">Pending</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+  </div>
+
+
+  <!-- ============================================
+       MOBILE LAYOUT (< 768px)
+       ============================================ -->
+  <div v-if="isMobile" class="app-shell-mobile fade-in">
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+      <h1 class="mobile-header-title">Dashboard</h1>
+      <button class="btn btn-ghost btn-icon btn-sm">
+        <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+      </button>
+    </header>
+
+    <!-- Mobile Content -->
+    <main class="mobile-content">
+
+      <!-- KPI Cards (2-column grid) -->
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); margin-bottom: var(--space-6);" class="stagger-in">
+
+        <div class="kpi-card pressable">
+          <div class="kpi-label">Chaplains</div>
+          <div class="kpi-value" style="font-size: var(--text-2xl);">{{ kpis.totalChaplains || 0 }}</div>
+        </div>
+
+        <div class="kpi-card pressable" style="border-left: 3px solid var(--color-success);">
+          <div class="kpi-label">On Duty</div>
+          <div class="kpi-value" style="font-size: var(--text-2xl); color: var(--color-success);">{{ kpis.onDutyNow || 0 }}</div>
+        </div>
+
+        <div class="kpi-card pressable">
+          <div class="kpi-label">Encounters</div>
+          <div class="kpi-value" style="font-size: var(--text-2xl);">{{ kpis.totalEncounters || 0 }}</div>
+        </div>
+
+        <div class="kpi-card pressable">
+          <div class="kpi-label">Crisis</div>
+          <div class="kpi-value" style="font-size: var(--text-2xl);">{{ kpis.crisisEvents || 0 }}</div>
+        </div>
+
+        <div class="kpi-card pressable">
+          <div class="kpi-label">Prayers</div>
+          <div class="kpi-value" style="font-size: var(--text-2xl);">{{ kpis.prayerRequests || 0 }}</div>
+        </div>
+
+        <div class="kpi-card pressable">
+          <div class="kpi-label">Jan Stipends</div>
+          <div class="kpi-value" style="font-size: var(--text-xl);">${{ janStipends || 0 }}</div>
+        </div>
+      </div>
+
+      <!-- On-Duty Chaplains (Horizontal Scroll) -->
+      <div class="card" style="margin-bottom: var(--space-6);">
+        <div class="card-header">
+          <h2 class="card-title">On Duty Now</h2>
+        </div>
+
+        <div v-if="onDutyChaplains.length === 0" style="padding: var(--space-4); text-align: center; color: var(--color-muted); font-size: var(--text-sm);">
+          No chaplains on duty
+        </div>
+
+        <div v-else style="display: flex; gap: var(--space-3); overflow-x: auto; padding-bottom: var(--space-2);">
+          <div v-for="chaplain in onDutyChaplains" :key="chaplain.id"
+               style="display: flex; flex-direction: column; align-items: center; gap: var(--space-2); min-width: 80px;">
+            <div class="avatar avatar-lg">
+              <img v-if="chaplain.photoUrl" :src="chaplain.photoUrl" :alt="chaplain.displayName">
+              <span v-else>{{ chaplain.displayName.charAt(0) }}</span>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: var(--text-xs); font-weight: var(--font-medium);">{{ chaplain.displayName.split(' ')[0] }}</div>
+              <div style="font-size: 10px; color: var(--color-muted);">{{ chaplain.terminals?.[0] || '—' }}</div>
+            </div>
+            <span class="badge badge-success" style="font-size: 10px; padding: 2px 6px;">Active</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coverage Summary -->
+      <div class="card" style="margin-bottom: var(--space-6);">
+        <div class="card-header">
+          <h2 class="card-title">Coverage Summary</h2>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); text-align: center;">
+          <div>
+            <div style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--color-success);">{{ coverageStats.filled }}</div>
+            <div style="font-size: var(--text-xs); color: var(--color-muted);">Filled</div>
+          </div>
+          <div>
+            <div style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--color-error);">{{ coverageStats.empty }}</div>
+            <div style="font-size: var(--text-xs); color: var(--color-muted);">Empty</div>
+          </div>
+          <div>
+            <div style="font-size: var(--text-xl); font-weight: var(--font-bold);">{{ coverageStats.rate }}%</div>
+            <div style="font-size: var(--text-xs); color: var(--color-muted);">Rate</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity (Card List) -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Recent Activity</h2>
+        </div>
+
+        <div v-if="recentDutyLogs.length === 0" style="padding: var(--space-4); text-align: center; color: var(--color-muted); font-size: var(--text-sm);">
+          No recent activity
+        </div>
+
+        <div v-else style="display: flex; flex-direction: column; gap: var(--space-2);">
+          <div v-for="log in recentDutyLogs.slice(0, 5)" :key="log.id"
+               class="pressable"
+               style="padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: var(--font-medium); font-size: var(--text-sm); margin-bottom: 2px;">{{ getUserName(log.userId) }}</div>
+              <div style="font-size: var(--text-xs); color: var(--color-muted);">
+                {{ formatDate(log.startTime) }} · {{ log.totalHours ? log.totalHours.toFixed(1) + 'h' : '—' }}
+              </div>
+            </div>
+            <span v-if="log.isPaid" class="badge badge-paid" style="font-size: 10px;">Paid</span>
+            <span v-else-if="log.approved" class="badge badge-approved" style="font-size: 10px;">Approved</span>
+            <span v-else class="badge badge-pending" style="font-size: 10px;">Pending</span>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="bottom-nav-item active">
+        <i data-lucide="layout-dashboard"></i>
+        <span>Dashboard</span>
+      </button>
+      <a href="users-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="users"></i>
+        <span>Users</span>
+      </a>
+      <a href="duty-days-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="clock"></i>
+        <span>Duty</span>
+      </a>
+      <a href="stipends-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="dollar-sign"></i>
+        <span>Stipends</span>
+      </a>
+      <a href="settings-v1.html" class="bottom-nav-item" style="text-decoration: none;">
+        <i data-lucide="more-horizontal"></i>
+        <span>More</span>
+      </a>
+    </nav>
+
+  </div>
+
+</div>
+
+<script>
+const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+
+createApp({
+  setup() {
+    // Responsive state
+    const isMobile = ref(window.innerWidth < 768);
+    const onResize = () => {
+      isMobile.value = window.innerWidth < 768;
+    };
+
+    // Data state
+    const users = ref([]);
+    const dutyLogs = ref([]);
+    const metrics = ref([]);
+    const stipendRecords = ref([]);
+    const coverageSchedules = ref([]);
+    const kpis = ref({});
+
+    // Current date
+    const currentDate = computed(() => {
+      const d = new Date();
+      return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    });
+
+    // On-duty chaplains
+    const onDutyChaplains = computed(() => {
+      return users.value.filter(u => u.isChaplain && u.onDuty);
+    });
+
+    // Recent duty logs (last 5)
+    const recentDutyLogs = computed(() => {
+      return [...dutyLogs.value]
+        .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
+        .slice(0, 5);
+    });
+
+    // Calculate January stipends paid
+    const janStipends = computed(() => {
+      return stipendRecords.value
+        .filter(r => r.monthName === 'January' && r.year === 2026 && r.isCompleted)
+        .reduce((sum, r) => sum + (r.stipendAmount || 0), 0);
+    });
+
+    // Coverage stats (current week)
+    const coverageStats = computed(() => {
+      const now = new Date();
+      const currentWeek = getWeekNumber(now);
+      const schedule = coverageSchedules.value.find(s => s.weekNumber === currentWeek && s.year === now.getFullYear());
+
+      if (!schedule || !schedule.slots) {
+        return { filled: 0, empty: 0, rate: 0 };
+      }
+
+      let filled = 0;
+      let total = 0;
+      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+      days.forEach(day => {
+        const slots = schedule.slots[day] || {};
+        for (let hour = 5; hour <= 21; hour++) {
+          total++;
+          if (slots[String(hour)]) {
+            filled++;
+          }
+        }
+      });
+
+      const rate = total > 0 ? Math.round((filled / total) * 100) : 0;
+      return { filled, empty: total - filled, rate };
+    });
+
+    // Helpers
+    function getUserName(userId) {
+      const user = users.value.find(u => u.id === userId);
+      return user ? user.displayName : 'Unknown';
+    }
+
+    function getTerminalFromUser(userId) {
+      const user = users.value.find(u => u.id === userId);
+      return user?.terminals?.[0] || '—';
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function getWeekNumber(date) {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    }
+
+    // Lifecycle
+    onMounted(() => {
+      window.addEventListener('resize', onResize);
+
+      document.addEventListener('mockdb:ready', () => {
+        users.value = mockDb.getAll('users');
+        dutyLogs.value = mockDb.getAll('duty_logs');
+        metrics.value = mockDb.getAll('chaplain_metrics');
+        stipendRecords.value = mockDb.getAll('stipend_records');
+        coverageSchedules.value = mockDb.getAll('coverage_schedules');
+        kpis.value = mockHelpers.getDashboardMetrics();
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+      });
+
+      // Initialize icons immediately (will re-run after data loads)
+      lucide.createIcons();
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('resize', onResize);
+    });
+
+    return {
+      isMobile,
+      currentDate,
+      users,
+      kpis,
+      janStipends,
+      onDutyChaplains,
+      recentDutyLogs,
+      coverageStats,
+      getUserName,
+      getTerminalFromUser,
+      formatDate
+    };
+  }
+}).mount('#app');
+</script>
+
+</body>
+</html>
