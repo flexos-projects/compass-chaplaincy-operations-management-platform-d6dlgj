@@ -1,0 +1,65 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://askflexi-nuxt.vercel.app https://*.vercel.app http://localhost:*"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/preview/login",
+      "destination": "/preview/pages/login-v1.html"
+    },
+    {
+      "source": "/preview",
+      "destination": "/preview/pages/dashboard-v1.html"
+    },
+    {
+      "source": "/preview/users",
+      "destination": "/preview/pages/users-v1.html"
+    },
+    {
+      "source": "/preview/users/:id",
+      "destination": "/preview/pages/user-detail-v1.html"
+    },
+    {
+      "source": "/preview/duty-days",
+      "destination": "/preview/pages/duty-days-v1.html"
+    },
+    {
+      "source": "/preview/coverage",
+      "destination": "/preview/pages/coverage-v1.html"
+    },
+    {
+      "source": "/preview/stipends",
+      "destination": "/preview/pages/stipends-v1.html"
+    },
+    {
+      "source": "/preview/stipends/:id",
+      "destination": "/preview/pages/stipend-detail-v1.html"
+    },
+    {
+      "source": "/preview/reports",
+      "destination": "/preview/pages/reports-v1.html"
+    },
+    {
+      "source": "/preview/settings",
+      "destination": "/preview/pages/settings-v1.html"
+    },
+    {
+      "source": "/preview/:path*",
+      "destination": "/preview/:path*"
+    }
+  ]
+}
