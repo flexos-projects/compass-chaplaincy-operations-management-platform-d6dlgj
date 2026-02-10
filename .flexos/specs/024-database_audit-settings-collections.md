@@ -194,8 +194,8 @@ interface AppSettings {
   "supportEmail": "support@dfwaichaplains.org",
   "theme": "light",
   "dateFormat": "US",
-  "updatedAt": "2026-01-15T09:00:00Z",
-  "updatedBy": "admin-director-uid"
+  "updatedAt": "2026-02-10T03:08:01.241Z",
+  "updatedBy": "system"
 }
 ```
 
