@@ -234,7 +234,7 @@ Key relationships: duty_logs.userId → users.uid, duty_logs.payoutId → chapla
   "estimatedDocumentCount": "1",
   "documentId": "config",
   "fields": [
-    {"name": "baseStipendRate", "type": "number", "required": true, "default": 80, "description": "Default dollars per shift"},
+    {"name": "baseStipendRate", "type": "number", "required": true, "default": 100, "description": "Default dollars per shift"},
     {"name": "programYear", "type": "number", "required": true, "description": "Current program year (e.g., 2026)"},
     {"name": "adminUserIds", "type": "array", "required": true, "description": "Array of UIDs with admin access"},
     {"name": "defaultPhotoUrl", "type": "string", "required": false, "description": "Default avatar URL for new users"},
