@@ -9,7 +9,7 @@ sequence: 15
 tags: [pages, stipends, financial, admin-workflow]
 relatesTo: [docs/core/003-pages.md, docs/core/004-database.md, docs/core/005-flows.md]
 createdAt: "2026-02-09T00:30:00Z"
-updatedAt: "2026-02-09T00:30:00Z"
+updatedAt: "2026-02-10T03:08:01.241Z"
 ---
 
 # Pages: Stipends & Stipend Detail
@@ -53,7 +53,7 @@ The stipend processing system is the most complex and business-critical feature 
    - Row displays:
      - Chaplain name and avatar
      - Shift count (e.g., "4 shifts")
-     - Base amount ($80 × shift count)
+     - Base amount ($100 × shift count)
      - Adjustment amount (if any, shows +/- dollars)
      - Total amount (base + adjustments)
      - Checkbox for batch selection
@@ -61,11 +61,15 @@ The stipend processing system is the most complex and business-critical feature 
 
 4. **Duty Entry Table (per chaplain, expanded)**
    - Nested within chaplain row
-   - Columns: Date, Start Time, End Time, Hours, Terminal, Base Rate, Adjustment, Total
+   - Columns: Date, Start Time, End Time, Hours, Terminal, Base Rate, Adjustment, Total, Status, Actions
    - Each entry has:
      - Individual checkbox for selection
-     - Adjustment slider (range: -$80 to +$200)
-     - Status badge (Unpaid/Processing/Paid)
+     - Adjustment slider (range: -$100 to +$200 for a $100 base rate)
+     - Status badge (Pending/Approved/Rejected/Paid)
+     - **Actions:**
+       - **Approve Button:** (Icon: checkmark) Marks `duty_logs.approved = true`.
+       - **Reject Button:** (Icon: X) Marks `duty_logs.approved = false`.
+       - (If already approved/rejected, buttons are disabled and status badge updates.)
    - If entry is already paid: green badge, disabled checkbox, shows check number and payout ID
 
 5. **Payout Totals Card (sticky footer)**
@@ -75,8 +79,8 @@ The stipend processing system is the most complex and business-critical feature 
      - Month total: "${Z} processed this month"
      - YTD total: "${W} paid year-to-date"
    - Action buttons:
-     - "Select All" / "Deselect All"
-     - "Process Selected" (primary action, disabled if no selection)
+     - "Select All Approved" / "Deselect All"
+     - "Process Selected" (primary action, disabled if no selection or if selected shifts are not approved)
      - "Export Period Data" (CSV)
 
 ### States
@@ -103,8 +107,9 @@ The stipend processing system is the most complex and business-critical feature 
 2. **Chaplain row expansion:** Lazy-loads individual duty entries for that chaplain
 3. **Adjustment slider:** Updates client-side totals immediately (no server call until process)
 4. **Individual checkbox:** Adds/removes entry from batch selection
-5. **Select All:** Checks all unpaid entries across all chaplains in visible period
-6. **Process Selected:** Opens check number modal, then batch-creates payouts server-side
+5. **Approve/Reject Button:** Updates `duty_logs.approved` status for the specific shift. Triggers re-calculation of totals for the chaplain and updates the UI status badge.
+6. **Select All Approved:** Checks all *approved* and unpaid entries across all chaplains in visible period.
+7. **Process Selected:** Opens check number modal, then batch-creates payouts server-side. Only allows processing of approved shifts.
 
 ## /stipends/:id Page Structure
 
@@ -125,12 +130,13 @@ The stipend processing system is the most complex and business-critical feature 
 
 3. **Duty Entries List**
    - Table showing all duty_logs included in this payout
-   - Columns: Date, Start Time, End Time, Hours, Terminal, Base Rate, Adjustment, Total
+   - Columns: Date, Start Time, End Time, Hours, Terminal, Base Rate, Adjustment, Total, Approval Status
    - Footer row: "Total: {count} shifts, ${amount}"
    - Each row links to the duty log (no edit, read-only)
+   - **Approval Status Column:** Displays `duty_logs.approved` status (Approved / Rejected / Pending).
 
 4. **Amount Breakdown Table**
-   - Base amount: `$80 × {count} shifts = ${baseTotal}`
+   - Base amount: `$100 × {count} shifts = ${baseTotal}`
    - Adjustments: `+${positiveAdj}, -${negativeAdj} = ${netAdj}`
    - Final total: `${payoutAmount}`
 
@@ -224,7 +230,7 @@ When admin clicks "Confirm & Process" after entering check number:
 
 **Server Logic:**
 1. Verify admin auth token
-2. Fetch app_settings.baseStipendRate (e.g., $80)
+2. Fetch app_settings.baseStipendRate (e.g., $100)
 3. Group entries by chaplainId
 4. For each chaplain group:
    - Fetch chaplain user document
@@ -319,7 +325,7 @@ Once a chaplain_payouts document is created, it is NEVER edited or deleted. Corr
 
 ### Adjustment Validation
 
-- Client-side: Adjustment slider range -$80 to +$200
+- Client-side: Adjustment slider range -$100 to +$200
 - Server-side: No hard limit enforced (admins may need flexibility for unusual cases)
 - Adjustment reasoning: Optional note field could be added to duty_log.adjustmentNote for audit purposes (future enhancement)
 
@@ -339,16 +345,18 @@ Once a chaplain_payouts document is created, it is NEVER edited or deleted. Corr
 ### Stipends Page
 
 - [ ] Given I select "January", when duty logs load, then only unpaid shifts from Jan 1-31 are displayed
-- [ ] Given Chaplain Rodriguez has 3 qualifying shifts at $80 base rate, when the list renders, then his row shows "3 shifts, $240"
-- [ ] Given I apply a +$20 adjustment to one shift, when totals recalculate, then Rodriguez's total shows "$260" and selected amount updates
-- [ ] Given I select 5 entries across 2 chaplains, when I click "Process Selected", then the check number modal appears
+- [ ] Given Chaplain Rodriguez has 3 qualifying shifts at $100 base rate, when the list renders, then his row shows "3 shifts, $300"
+- [ ] Given I apply a +$20 adjustment to one shift, when totals recalculate, then Rodriguez's total shows "$320" and selected amount updates
+- [ ] Given I click the "Approve" button for a shift, when the action completes, then `duty_logs.approved` is true, the status badge updates, and an audit log entry is created.
+- [ ] Given I click the "Reject" button for a shift, when the action completes, then `duty_logs.approved` is false, the status badge updates, and an audit log entry is created.
+- [ ] Given I select 5 *approved* entries across 2 chaplains, when I click "Process Selected", then the check number modal appears
 - [ ] Given I enter check number "CHK-001" and click Confirm, when processing completes, then 5 duty logs are marked paid, 2 payout records created, and success toast shows
 - [ ] Given all shifts for January are paid, when I select January, then "Period Complete" status displays and process button is disabled
 
 ### Stipend Detail Page
 
 - [ ] Given I navigate to `/stipends/{validId}`, when the page loads, then payout header, chaplain info, and duty entries render with correct data
-- [ ] Given a payout includes 4 duty entries, when the amount breakdown renders, then base ($80 × 4 = $320), adjustments, and final total match payout.payoutAmount
+- [ ] Given a payout includes 4 duty entries, when the amount breakdown renders, then base ($100 × 4 = $400), adjustments, and final total match payout.payoutAmount
 - [ ] Given I click "View Full Profile", when navigation completes, then I am on `/users/{chaplainId}` detail page
 - [ ] Given I navigate to `/stipends/invalid-id`, when query completes, then 404 state displays with "Payout not found" message
 

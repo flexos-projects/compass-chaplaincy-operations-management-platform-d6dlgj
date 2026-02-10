@@ -9,10 +9,23 @@ sequence: 1
 tags: [changelog, import]
 relatesTo: ["notes/001-project-kickoff/note.md"]
 createdAt: "2026-02-09T00:30:00Z"
-updatedAt: "2026-02-09T00:30:00Z"
+updatedAt: "2026-02-10T03:08:01.241Z"
 ---
 
 # Changelog — Project Kickoff
+
+## 2026-02-10
+
+### Stipend Page Enhancements
+- Updated `Stipends & Stipend Detail Pages` spec (`015-pages_stipends.md`).
+- Added UI for manual positive/negative stipend adjustments on individual duty entries.
+- Incorporated UI for approving and rejecting shifts.
+- Clarified integration of `paymentStatus` for stipend payments.
+- Adjustment slider range updated to reflect new $100 base stipend rate.
+
+### Updated Stipend Rate
+- Changed `baseStipendRate` in `app_settings` to $100.
+- Related spec: `024-database_audit-settings-collections.md`
 
 ## 2026-02-09
 

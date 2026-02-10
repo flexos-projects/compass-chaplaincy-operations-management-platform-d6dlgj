@@ -9,7 +9,7 @@ sequence: 24
 tags: [database, schema, audit, settings, security, compliance]
 relatesTo: [docs/core/004-database.md, docs/core/005-flows.md, docs/core/007-technical.md]
 createdAt: "2026-02-09T00:30:00Z"
-updatedAt: "2026-02-09T00:30:00Z"
+updatedAt: "2026-02-10T03:08:01.241Z"
 ---
 
 # Audit Log & App Settings Collections
@@ -290,7 +290,7 @@ match /audit_log/{entryId} {
 
 // app_settings: Admin read/write
 match /app_settings/{docId} {
-  // All authenticated users can read settings (need adminUserIds to check role)
+  // All authenticated users can read settings (needed for adminUserIds to check role)
   allow read: if request.auth != null;
 
   // Only existing admins can write
