@@ -1,0 +1,29 @@
+{
+  "name": "compass-chaplaincy",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@tanstack/vue-table": "^8.17.3",
+    "date-fns": "^3.6.0",
+    "firebase": "^10.12.2",
+    "firebase-admin": "^12.1.1",
+    "nuxt-vuefire": "^1.0.2",
+    "papaparse": "^5.4.1",
+    "vuefire": "^3.1.23"
+  },
+  "devDependencies": {
+    "@nuxt/types": "^2.18.1",
+    "@nuxtjs/google-fonts": "^3.2.0",
+    "@nuxtjs/tailwindcss": "^6.12.0",
+    "nuxt": "^3.12.1",
+    "typescript": "^5.4.5",
+    "vue": "^3.4.27",
+    "vue-router": "^4.3.3"
+  }
+}

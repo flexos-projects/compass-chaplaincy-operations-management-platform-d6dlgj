@@ -1,65 +1,15 @@
 {
-  "cleanUrls": true,
-  "trailingSlash": false,
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Content-Security-Policy",
-          "value": "frame-ancestors 'self' https://askflexi-nuxt.vercel.app https://*.vercel.app http://localhost:*"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": ""
-        }
-      ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/preview/login",
-      "destination": "/preview/pages/login-v1.html"
-    },
-    {
-      "source": "/preview",
-      "destination": "/preview/pages/dashboard-v1.html"
-    },
-    {
-      "source": "/preview/users",
-      "destination": "/preview/pages/users-v1.html"
-    },
-    {
-      "source": "/preview/users/:id",
-      "destination": "/preview/pages/user-detail-v1.html"
-    },
-    {
-      "source": "/preview/duty-days",
-      "destination": "/preview/pages/duty-days-v1.html"
-    },
-    {
-      "source": "/preview/coverage",
-      "destination": "/preview/pages/coverage-v1.html"
-    },
-    {
-      "source": "/preview/stipends",
-      "destination": "/preview/pages/stipends-v1.html"
-    },
-    {
-      "source": "/preview/stipends/:id",
-      "destination": "/preview/pages/stipend-detail-v1.html"
-    },
-    {
-      "source": "/preview/reports",
-      "destination": "/preview/pages/reports-v1.html"
-    },
-    {
-      "source": "/preview/settings",
-      "destination": "/preview/pages/settings-v1.html"
-    },
-    {
-      "source": "/preview/:path*",
-      "destination": "/preview/:path*"
-    }
-  ]
+  "framework": "nuxt",
+  "buildCommand": "nuxt build",
+  "outputDirectory": ".output",
+  "installCommand": "pnpm install",
+  "env": {
+    "NUXT_PUBLIC_FIREBASE_API_KEY": "@firebase-api-key",
+    "NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN": "@firebase-auth-domain",
+    "NUXT_PUBLIC_FIREBASE_PROJECT_ID": "@firebase-project-id",
+    "NUXT_PUBLIC_FIREBASE_STORAGE_BUCKET": "@firebase-storage-bucket",
+    "NUXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "@firebase-messaging-sender-id",
+    "NUXT_PUBLIC_FIREBASE_APP_ID": "@firebase-app-id",
+    "NUXT_FIREBASE_ADMIN_SERVICE_ACCOUNT": "@firebase-admin-sa"
+  }
 }
